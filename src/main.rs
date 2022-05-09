@@ -16,13 +16,41 @@ impl Sigmoid for f64 {
 
 pub struct Network {
     shape: Vec<usize>,
-    layers: Vec<Vec<Box<dyn NodeValue>>>,
+    layers: Vec<Vec<AnyNode>>,
 }
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
-        Network {
-            shape: shape.clone(),
-            layers: vec![]
+        let shape = shape.clone();
+        let layers = shape
+            .iter()
+            .enumerate()
+            .map(|(i, n)| {
+                [0..*n]
+                    .iter()
+                    .map(|_| {
+                        if i == 0 {
+                            AnyNode::Normal(Node::new(0., &Vec::from([]), &vec![]))
+                        } else {
+                            AnyNode::Start(StartNode::new(0.))
+                        }
+                    })
+                    .collect::<Vec<AnyNode>>()
+            })
+            .collect();
+        Network { shape, layers }
+    }
+}
+
+// region Node
+pub enum AnyNode {
+    Start(StartNode),
+    Normal(Node),
+}
+impl AnyNode {
+    pub fn get_value(&self) -> f64 {
+        match self {
+            Self::Start(v) => v.get_value(),
+            Self::Normal(v) => v.get_value(),
         }
     }
 }
@@ -78,6 +106,12 @@ impl NodeValue for StartNode {
         self.value
     }
 }
+impl StartNode {
+    pub fn new(value: f64) -> StartNode {
+        StartNode { value }
+    }
+}
+//endregion
 
 fn run_checks() {
     let n = Node::new(0.2, &vec![1.0, 2.0], &vec![0.7, 0.6]);
