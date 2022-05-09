@@ -14,6 +14,19 @@ impl Sigmoid for f64 {
     }
 }
 
+pub struct Network {
+    shape: Vec<usize>,
+    layers: Vec<Vec<Box<dyn NodeValue>>>,
+}
+impl Network {
+    pub fn new(shape: &Vec<usize>) -> Network {
+        Network {
+            shape: shape.clone(),
+            layers: vec![]
+        }
+    }
+}
+
 pub trait NodeValue {
     fn get_value(&self) -> f64;
 }
@@ -24,15 +37,25 @@ pub struct Node {
     prev_v: Vec<f64>,
     result_cache: RefCell<Option<f64>>,
 }
-impl Node{
-    fn invalidate(&self){
+impl Node {
+    pub fn new(bias: f64, inp_w: &Vec<f64>, prev_v: &Vec<f64>) -> Node {
+        let inp_w = inp_w.clone();
+        let prev_v = prev_v.clone();
+        return Self {
+            bias,
+            inp_w,
+            prev_v,
+            result_cache: RefCell::new(None),
+        };
+    }
+    fn invalidate(&self) {
         self.result_cache.replace(None);
     }
 }
 
 impl NodeValue for Node {
     fn get_value(&self) -> f64 {
-        if let Some(cached) = *self.result_cache.borrow(){
+        if let Some(cached) = *self.result_cache.borrow() {
             return cached;
         }
         let val = ((&self.inp_w)
@@ -40,7 +63,8 @@ impl NodeValue for Node {
             .enumerate()
             .map(|t| self.prev_v[t.0] * t.1)
             .sum::<f64>()
-            + self.bias).sigmoid();
+            + self.bias)
+            .sigmoid();
         self.result_cache.replace(Some(val));
         return val;
     }
@@ -55,24 +79,19 @@ impl NodeValue for StartNode {
     }
 }
 
-fn main() {
-    println!("Hello world!");
-    let n = Node {
-        bias: 0.2,
-        inp_w: vec![1.0, 2.0],
-        prev_v: vec![0.7, 0.6],
-        result_cache: RefCell::new(None),
-    };
+fn run_checks() {
+    let n = Node::new(0.2, &vec![1.0, 2.0], &vec![0.7, 0.6]);
     let expect_v = 0.8909031788043871;
     let v = n.get_value();
-    println!("v={}", v);
     assert_eq!(v, expect_v);
-    println!("cached={:?}", n.result_cache);
     assert_eq!(*n.result_cache.borrow(), Some(expect_v));
     let v = n.get_value();
-    println!("call-again={}", v);
     assert_eq!(v, expect_v);
     n.invalidate();
     assert_eq!(*n.result_cache.borrow(), None);
-    println!("cached={:?}", n.result_cache);
+}
+
+fn main() {
+    println!("Hello world!");
+    run_checks();
 }
