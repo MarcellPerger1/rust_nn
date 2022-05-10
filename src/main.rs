@@ -14,22 +14,27 @@ impl Sigmoid for f64 {
     }
 }
 
+#[derive(Debug)]
 pub struct Network {
     shape: Vec<usize>,
     layers: Vec<Vec<AnyNode>>,
 }
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
+        // im afraid its a chicken and egg situation: 
+        // Node needs Network to exists (to get a reference)
+        // but Network needs those Nodes in the initialisation
+        // solution: set layers to None first then once Nodes created,
+        // set to actual value
         let shape = shape.clone();
         let layers = shape
             .iter()
             .enumerate()
             .map(|(i, n)| {
-                [0..*n]
-                    .iter()
+                (0..*n)
                     .map(|_| {
-                        if i == 0 {
-                            AnyNode::Normal(Node::new(0., &Vec::from([]), &vec![]))
+                        if i != 0 {
+                            AnyNode::Normal(Node::new(0., &Vec::from([])))
                         } else {
                             AnyNode::Start(StartNode::new(0.))
                         }
@@ -37,42 +42,53 @@ impl Network {
                     .collect::<Vec<AnyNode>>()
             })
             .collect();
-        Network { shape, layers }
+        let nw = Network { shape, layers };
+        return nw;
+        
+    }
+    
+    pub fn layers_ref(& self) -> &Vec<Vec<AnyNode>>{
+        &self.layers
+    }
+    pub fn get_layer(&self, i: usize) -> &Vec<AnyNode>{
+        &self.layers_ref()[i]
+    }
+    pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode{
+        &self.get_layer(li)[ni]
     }
 }
 
 // region Node
+#[derive(Debug)]
 pub enum AnyNode {
     Start(StartNode),
     Normal(Node),
 }
 impl AnyNode {
-    pub fn get_value(&self) -> f64 {
+    pub fn get_value(&self, n: &Network) -> f64 {
         match self {
-            Self::Start(v) => v.get_value(),
-            Self::Normal(v) => v.get_value(),
+            Self::Start(v) => v.get_value(n),
+            Self::Normal(v) => v.get_value(n),
         }
     }
 }
 
 pub trait NodeValue {
-    fn get_value(&self) -> f64;
+    fn get_value(&self, network: &Network) -> f64;
 }
 
+#[derive(Debug)]
 pub struct Node {
     pub bias: f64,
     pub inp_w: Vec<f64>,
-    prev_v: Vec<f64>,
     result_cache: RefCell<Option<f64>>,
 }
 impl Node {
-    pub fn new(bias: f64, inp_w: &Vec<f64>, prev_v: &Vec<f64>) -> Node {
+    pub fn new(bias: f64, inp_w: &Vec<f64>) -> Node {
         let inp_w = inp_w.clone();
-        let prev_v = prev_v.clone();
         return Self {
             bias,
             inp_w,
-            prev_v,
             result_cache: RefCell::new(None),
         };
     }
@@ -82,14 +98,14 @@ impl Node {
 }
 
 impl NodeValue for Node {
-    fn get_value(&self) -> f64 {
+    fn get_value(&self, network: &Network) -> f64 {
         if let Some(cached) = *self.result_cache.borrow() {
             return cached;
         }
         let val = ((&self.inp_w)
             .iter()
             .enumerate()
-            .map(|t| self.prev_v[t.0] * t.1)
+            .map(|(i, v)| network.get_node(0, i).get_value(&network) * v)
             .sum::<f64>()
             + self.bias)
             .sigmoid();
@@ -98,11 +114,12 @@ impl NodeValue for Node {
     }
 }
 
+#[derive(Debug)]
 pub struct StartNode {
     value: f64,
 }
 impl NodeValue for StartNode {
-    fn get_value(&self) -> f64 {
+    fn get_value(&self, _: &Network) -> f64 {
         self.value
     }
 }
@@ -114,12 +131,15 @@ impl StartNode {
 //endregion
 
 fn run_checks() {
-    let n = Node::new(0.2, &vec![1.0, 2.0], &vec![0.7, 0.6]);
-    let expect_v = 0.8909031788043871;
-    let v = n.get_value();
+    let nw = Network::new(&vec![2,2]);
+    let n = Node::new(0.2, &vec![1.0, 2.0]);
+    //println!("{:#?}", n);
+    let expect_v = 0.549833997312478;
+    let v = n.get_value(&nw);
+    //println!("{:#?}", n);
     assert_eq!(v, expect_v);
     assert_eq!(*n.result_cache.borrow(), Some(expect_v));
-    let v = n.get_value();
+    let v = n.get_value(&nw);
     assert_eq!(v, expect_v);
     n.invalidate();
     assert_eq!(*n.result_cache.borrow(), None);
