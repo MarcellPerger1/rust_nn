@@ -21,7 +21,7 @@ pub struct Network {
 }
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
-        // im afraid its a chicken and egg situation: 
+        // im afraid its a chicken and egg situation:
         // Node needs Network to exists (to get a reference)
         // but Network needs those Nodes in the initialisation
         // solution: set layers to None first then once Nodes created,
@@ -44,17 +44,33 @@ impl Network {
             .collect();
         let nw = Network { shape, layers };
         return nw;
-        
     }
-    
-    pub fn layers_ref(& self) -> &Vec<Vec<AnyNode>>{
+
+    pub fn layers_ref(&self) -> &Vec<Vec<AnyNode>> {
         &self.layers
     }
-    pub fn get_layer(&self, i: usize) -> &Vec<AnyNode>{
+    pub fn get_layer(&self, i: usize) -> &Vec<AnyNode> {
         &self.layers_ref()[i]
     }
-    pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode{
+    pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
         &self.get_layer(li)[ni]
+    }
+    pub fn get_start_node(&self, ni: usize) -> &StartNode {
+        let an = self.get_node(0, ni);
+        if let AnyNode::Start(sn) = an {
+            sn
+        } else {
+            unreachable!()
+        }
+    }
+    pub fn get_main_node(&self, li: usize, ni: usize) -> &Node {
+        assert_ne!(li, 0, "no main nodes in layer 0");
+        let an = self.get_node(li, ni);
+        if let AnyNode::Normal(n) = an {
+            n
+        } else {
+            unreachable!()
+        }
     }
 }
 
@@ -131,7 +147,7 @@ impl StartNode {
 //endregion
 
 fn run_checks() {
-    let nw = Network::new(&vec![2,2]);
+    let nw = Network::new(&vec![2, 2]);
     let n = Node::new(0.2, &vec![1.0, 2.0]);
     //println!("{:#?}", n);
     let expect_v = 0.549833997312478;
