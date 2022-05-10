@@ -34,7 +34,7 @@ impl Network {
                 (0..*n)
                     .map(|_| {
                         if i != 0 {
-                            AnyNode::Normal(Node::new(0., &Vec::from([])))
+                            AnyNode::Normal(Node::new(0., &vec![0.; shape[i - 1]], i))
                         } else {
                             AnyNode::Start(StartNode::new(0.))
                         }
@@ -97,14 +97,16 @@ pub trait NodeValue {
 pub struct Node {
     pub bias: f64,
     pub inp_w: Vec<f64>,
+    pub layer: usize,
     result_cache: RefCell<Option<f64>>,
 }
 impl Node {
-    pub fn new(bias: f64, inp_w: &Vec<f64>) -> Node {
+    pub fn new(bias: f64, inp_w: &Vec<f64>, layer: usize) -> Node {
         let inp_w = inp_w.clone();
         return Self {
             bias,
             inp_w,
+            layer,
             result_cache: RefCell::new(None),
         };
     }
@@ -121,7 +123,7 @@ impl NodeValue for Node {
         let val = ((&self.inp_w)
             .iter()
             .enumerate()
-            .map(|(i, v)| network.get_node(0, i).get_value(&network) * v)
+            .map(|(i, v)| network.get_node(self.layer - 1, i).get_value(&network) * v)
             .sum::<f64>()
             + self.bias)
             .sigmoid();
@@ -148,7 +150,7 @@ impl StartNode {
 
 fn run_checks() {
     let nw = Network::new(&vec![2, 2]);
-    let n = Node::new(0.2, &vec![1.0, 2.0]);
+    let n = Node::new(0.2, &vec![1.0, 2.0], 1);
     //println!("{:#?}", n);
     let expect_v = 0.549833997312478;
     let v = n.get_value(&nw);
