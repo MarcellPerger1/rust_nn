@@ -16,6 +16,10 @@ impl Sigmoid for f64 {
     }
 }
 
+fn error_f(a: f64, b: f64) -> f64 {
+    (a - b).powi(2)
+}
+
 #[macro_export]
 macro_rules! expect_cast {
     ($var:expr => $t:path) => {
@@ -24,6 +28,9 @@ macro_rules! expect_cast {
         } else {
             unreachable!()
         }
+    };
+    ($var:expr, $t:path) => {
+        expect_cast!($var => $t)
     }
 }
 
@@ -34,6 +41,8 @@ pub struct Network {
     shape: Vec<usize>,
     layers: NetworkLayersT,
 }
+
+// main impl
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
         let shape = shape.clone();
@@ -45,8 +54,7 @@ impl Network {
                     .map(|_| {
                         // todo move this conditional out of the closure
                         if i != 0 {
-                            AnyNode::Normal(
-                                Node::new(0., &vec![0.; shape[i - 1]], i))
+                            AnyNode::Normal(Node::new(0., &vec![0.; shape[i - 1]], i))
                         } else {
                             AnyNode::Start(StartNode::new(0.))
                         }
@@ -57,7 +65,34 @@ impl Network {
         let nw = Network { shape, layers };
         return nw;
     }
-    
+
+    pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
+        assert_eq!(self.layers.len(), expected.len());
+        self.layers[self.shape.len()]
+            .iter()
+            .enumerate()
+            .map(|(i, n)| {
+                error_f(
+                    expected[i],
+                    expect_cast!(n=>AnyNode::Normal).get_value(&self),
+                )
+            })
+            .sum()
+    }
+
+    pub fn invalidate(&self){
+        let mut li = self.layers.iter();
+        li.next();
+        for l in li {
+            for n in l{
+                expect_cast!(n => AnyNode::Normal).invalidate();
+            }
+        }
+    }
+}
+
+// indexing stuff
+impl Network {
     #[inline]
     pub fn layers_ref(&self) -> &NetworkLayersT {
         &self.layers
@@ -69,14 +104,14 @@ impl Network {
     pub fn get_layer(&self, i: usize) -> &LayerT {
         &self.layers_ref()[i]
     }
-    
+
     pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
         &self.get_layer(li)[ni]
     }
     pub fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode {
         &mut self.layers[li][ni]
     }
-    
+
     pub fn get_start_node(&self, ni: usize) -> &StartNode {
         expect_cast!(self.get_node(0, ni) => AnyNode::Start)
     }
@@ -132,7 +167,7 @@ impl Node {
     pub fn invalidate(&self) {
         self.result_cache.replace(None);
     }
-    
+
     pub fn get_weight(&self, wi: usize) -> f64 {
         self.inp_w[wi]
     }
@@ -149,10 +184,11 @@ impl NodeValue for Node {
         if let Some(cached) = *self.result_cache.borrow() {
             return cached;
         }
-        let inp_sum = self.inp_w.iter()
+        let inp_sum = self
+            .inp_w
+            .iter()
             .enumerate()
-            .map(|(i, v)| {
-                network.get_node(self.layer - 1, i).get_value(&network) * v})
+            .map(|(i, v)| network.get_node(self.layer - 1, i).get_value(&network) * v)
             .sum::<f64>();
         let val = (inp_sum + self.bias).sigmoid();
         self.result_cache.replace(Some(val));
@@ -182,8 +218,11 @@ impl StartNode {
 
 macro_rules! assert_cached_eq {
     ($network:expr, $ni:expr, $li:expr, $val:expr) => {
-        assert_eq!(*$network.get_main_node($ni, $li).result_cache.borrow(), $val)
-    }
+        assert_eq!(
+            *$network.get_main_node($ni, $li).result_cache.borrow(),
+            $val
+        )
+    };
 }
 
 fn run_checks() {
@@ -198,7 +237,7 @@ fn run_checks() {
     nw.get_start_node_mut(1).set_value(1.0);
     assert_eq!(nw.get_start_node(1).value, 1.0);
     nw.get_main_node_mut(1, 1).set_weight(1, 1.0);
-    // NOTE: the reason its commented out is 
+    // NOTE: the reason its commented out is
     // because i might want set_weight to invalidate cache
     // assert_eq!(*nw.get_main_node(1, 1).result_cache.borrow(), Some(v));
     assert_eq!(nw.get_main_node(1, 1).get_weight(1), 1.0);
