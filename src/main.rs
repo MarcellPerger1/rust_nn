@@ -2,17 +2,26 @@ use std::cell::RefCell;
 
 pub trait Sigmoid {
     fn sigmoid(&self) -> Self;
+    fn sig_deriv(&self) -> Self;
 }
 impl Sigmoid for f32 {
     #[inline]
     fn sigmoid(&self) -> Self {
         1.0f32 / (1.0f32 + (-self).exp())
     }
+    fn sig_deriv(&self) -> Self {
+        let s = self.sigmoid();
+        return s * (1.0f32 - s);
+    }
 }
 impl Sigmoid for f64 {
     #[inline]
     fn sigmoid(&self) -> Self {
-        1. / (1. + (-self).exp())
+        1. / ((1 as Self) + (-self).exp())
+    }
+    fn sig_deriv(&self) -> Self {
+        let s = self.sigmoid();
+        return s * (1.0 - s);
     }
 }
 
@@ -80,11 +89,11 @@ impl Network {
             .sum()
     }
 
-    pub fn invalidate(&self){
+    pub fn invalidate(&self) {
         let mut li = self.layers.iter();
         li.next();
         for l in li {
-            for n in l{
+            for n in l {
                 expect_cast!(n => AnyNode::Normal).invalidate();
             }
         }
@@ -152,6 +161,7 @@ pub struct Node {
     pub bias: f64,
     pub inp_w: Vec<f64>,
     pub layer: usize,
+    sum_cache: RefCell<Option<f64>>,
     result_cache: RefCell<Option<f64>>,
 }
 impl Node {
@@ -162,9 +172,11 @@ impl Node {
             inp_w,
             layer,
             result_cache: RefCell::new(None),
+            sum_cache: RefCell::new(None),
         };
     }
     pub fn invalidate(&self) {
+        self.sum_cache.replace(None);
         self.result_cache.replace(None);
     }
 
@@ -173,6 +185,21 @@ impl Node {
     }
     pub fn set_weight(&mut self, wi: usize, v: f64) {
         self.inp_w[wi] = v;
+    }
+
+    pub fn get_sum(&self, network: &Network) -> f64 {
+        if let Some(cached) = *self.result_cache.borrow() {
+            return cached;
+        }
+        let inp_sum = self
+            .inp_w
+            .iter()
+            .enumerate()
+            .map(|(i, v)| network.get_node(self.layer - 1, i).get_value(&network) * v)
+            .sum::<f64>()
+            + self.bias;
+        self.sum_cache.replace(Some(inp_sum));
+        inp_sum
     }
 }
 
@@ -184,13 +211,8 @@ impl NodeValue for Node {
         if let Some(cached) = *self.result_cache.borrow() {
             return cached;
         }
-        let inp_sum = self
-            .inp_w
-            .iter()
-            .enumerate()
-            .map(|(i, v)| network.get_node(self.layer - 1, i).get_value(&network) * v)
-            .sum::<f64>();
-        let val = (inp_sum + self.bias).sigmoid();
+        let inp_sum = self.get_sum(network);
+        let val = inp_sum.sigmoid();
         self.result_cache.replace(Some(val));
         return val;
     }
@@ -246,6 +268,7 @@ fn run_checks() {
     let v = nw.get_main_node(1, 1).get_value(&nw);
     assert_eq!(v, 0.7310585786300049);
     assert_cached_eq!(nw, 1, 1, Some(v));
+    assert_eq!(*nw.get_main_node(1, 1).sum_cache.borrow(), Some(1.));
     println!("{:#?}", nw);
 }
 
