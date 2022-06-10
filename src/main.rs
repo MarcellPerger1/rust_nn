@@ -26,7 +26,7 @@ impl Sigmoid for f64 {
 }
 
 fn error_f(a: f64, b: f64) -> f64 {
-    (a - b).powi(2)
+    (a - b).powi(2)  // cleaner and (with optimisations) probably just as fast as *
 }
 
 #[macro_export]
@@ -77,7 +77,7 @@ impl Network {
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
         assert_eq!(self.layers.len(), expected.len());
-        self.layers[self.shape.len()]
+        self.layers[self.shape.len()-1]
             .iter()
             .enumerate()
             .map(|(i, n)| {
@@ -195,7 +195,9 @@ impl Node {
             .inp_w
             .iter()
             .enumerate()
-            .map(|(i, v)| network.get_node(self.layer - 1, i).get_value(&network) * v)
+            .map(|(i, v)| network
+                 .get_node(self.layer - 1, i)
+                 .get_value(&network) * v)
             .sum::<f64>()
             + self.bias;
         self.sum_cache.replace(Some(inp_sum));
@@ -272,6 +274,7 @@ fn run_checks() {
     assert_eq!(v, 0.7310585786300049);
     assert_cached_eq!(nw, 1, 1, Some(v));
     assert_cached_eq!(nw.get_main_node(1, 1).sum_cache, Some(1.));
+    println!("{}", nw.get_current_cost(&vec![0.5, 1.0]));
     println!("{:#?}", nw);
 }
 
