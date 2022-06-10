@@ -245,6 +245,9 @@ macro_rules! assert_cached_eq {
             $val
         )
     };
+    ($cache:expr, $val:expr) => {
+        assert_eq!(*$cache.borrow(), $val)
+    }
 }
 
 fn run_checks() {
@@ -268,7 +271,7 @@ fn run_checks() {
     let v = nw.get_main_node(1, 1).get_value(&nw);
     assert_eq!(v, 0.7310585786300049);
     assert_cached_eq!(nw, 1, 1, Some(v));
-    assert_eq!(*nw.get_main_node(1, 1).sum_cache.borrow(), Some(1.));
+    assert_cached_eq!(nw.get_main_node(1, 1).sum_cache, Some(1.));
     println!("{:#?}", nw);
 }
 
