@@ -26,7 +26,7 @@ impl Sigmoid for f64 {
 }
 
 fn error_f(a: f64, b: f64) -> f64 {
-    (a - b).powi(2)  // cleaner and (with optimisations) probably just as fast as *
+    (a - b).powi(2) // cleaner and (with optimisations) probably just as fast as *
 }
 
 #[macro_export]
@@ -77,7 +77,7 @@ impl Network {
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
         assert_eq!(self.layers.len(), expected.len());
-        self.layers[self.shape.len()-1]
+        self.layers[self.shape.len() - 1]
             .iter()
             .enumerate()
             .map(|(i, n)| {
@@ -176,7 +176,7 @@ impl Node {
             result_cache: RefCell::new(None),
             sum_cache: RefCell::new(None),
             nudge_sum: 0.0,
-            nudge_cnt: 0
+            nudge_cnt: 0,
         };
     }
     pub fn invalidate(&self) {
@@ -199,9 +199,7 @@ impl Node {
             .inp_w
             .iter()
             .enumerate()
-            .map(|(i, v)| network
-                 .get_node(self.layer - 1, i)
-                 .get_value(&network) * v)
+            .map(|(i, v)| network.get_node(self.layer - 1, i).get_value(&network) * v)
             .sum::<f64>()
             + self.bias;
         self.sum_cache.replace(Some(inp_sum));
@@ -253,7 +251,7 @@ macro_rules! assert_cached_eq {
     };
     ($cache:expr, $val:expr) => {
         assert_eq!(*$cache.borrow(), $val)
-    }
+    };
 }
 
 fn run_checks() {
