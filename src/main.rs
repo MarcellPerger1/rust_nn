@@ -163,6 +163,8 @@ pub struct Node {
     pub layer: usize,
     sum_cache: RefCell<Option<f64>>,
     result_cache: RefCell<Option<f64>>,
+    pub nudge_sum: f64,
+    pub nudge_cnt: i32,
 }
 impl Node {
     pub fn new(bias: f64, inp_w: &Vec<f64>, layer: usize) -> Node {
@@ -173,6 +175,8 @@ impl Node {
             layer,
             result_cache: RefCell::new(None),
             sum_cache: RefCell::new(None),
+            nudge_sum: 0.0,
+            nudge_cnt: 0
         };
     }
     pub fn invalidate(&self) {
@@ -274,7 +278,7 @@ fn run_checks() {
     assert_eq!(v, 0.7310585786300049);
     assert_cached_eq!(nw, 1, 1, Some(v));
     assert_cached_eq!(nw.get_main_node(1, 1).sum_cache, Some(1.));
-    println!("{}", nw.get_current_cost(&vec![0.5, 1.0]));
+    assert_eq!(nw.get_current_cost(&vec![0.5, 1.0]), 0.07232948812851325);
     println!("{:#?}", nw);
 }
 
