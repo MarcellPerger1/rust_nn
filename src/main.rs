@@ -59,11 +59,15 @@ impl Network {
             .iter()
             .enumerate()
             .map(|(i, n)| {
-                if i == 0 {
-                    return (0..*n).map(|_| AnyNode::Start(StartNode::new(0.))).collect::<LayerT>();
-                }
                 (0..*n)
-                    .map(|_| AnyNode::Normal(Node::new(0., &vec![0.; shape[i - 1]], i)))
+                    .map(|_| {
+                        // todo move this conditional out of the closure
+                        if i != 0 {
+                            AnyNode::Normal(Node::new(0., &vec![0.; shape[i - 1]], i))
+                        } else {
+                            AnyNode::Start(StartNode::new(0.))
+                        }
+                    })
                     .collect::<LayerT>()
             })
             .collect();
