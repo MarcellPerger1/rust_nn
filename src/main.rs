@@ -163,7 +163,8 @@ pub struct Node {
     pub layer: usize,
     sum_cache: RefCell<Option<f64>>,
     result_cache: RefCell<Option<f64>>,
-    pub nudge_sum: f64,
+    pub bias_nudge_sum: f64,
+    pub inp_w_nudge_sum: Vec<f64>,
     pub nudge_cnt: i32,
 }
 impl Node {
@@ -175,7 +176,8 @@ impl Node {
             layer,
             result_cache: RefCell::new(None),
             sum_cache: RefCell::new(None),
-            nudge_sum: 0.0,
+            bias_nudge_sum: 0.0,
+            inp_w_nudge_sum: Vec::new(),
             nudge_cnt: 0,
         };
     }
