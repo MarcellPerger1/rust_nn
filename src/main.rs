@@ -1,29 +1,6 @@
 use std::cell::RefCell;
 
-pub trait Sigmoid {
-    fn sigmoid(&self) -> Self;
-    fn sig_deriv(&self) -> Self;
-}
-impl Sigmoid for f32 {
-    #[inline]
-    fn sigmoid(&self) -> Self {
-        1.0f32 / (1.0f32 + (-self).exp())
-    }
-    fn sig_deriv(&self) -> Self {
-        let s = self.sigmoid();
-        return s * (1.0f32 - s);
-    }
-}
-impl Sigmoid for f64 {
-    #[inline]
-    fn sigmoid(&self) -> Self {
-        1. / ((1 as Self) + (-self).exp())
-    }
-    fn sig_deriv(&self) -> Self {
-        let s = self.sigmoid();
-        return s * (1.0 - s);
-    }
-}
+pub mod sigmoid;
 
 fn error_f(a: f64, b: f64) -> f64 {
     (a - b).powi(2) // cleaner and (with optimisations) probably just as fast as *
