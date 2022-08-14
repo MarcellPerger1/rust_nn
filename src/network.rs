@@ -1,5 +1,5 @@
-use crate::util::expect_cast;
 use crate::node::*;
+use crate::util::expect_cast;
 use crate::*;
 
 pub type LayerT = Vec<AnyNode>;
@@ -56,6 +56,22 @@ impl Network {
                 expect_cast!(n => AnyNode::Normal).invalidate();
             }
         }
+    }
+
+    pub fn get_outputs(&self) -> Vec<f64> {
+        self.layers
+            .last()
+            .expect("Network must have layers!")
+            .iter()
+            .map(|n| n.get_value(&self))
+            .collect()
+    }
+
+    pub fn set_inputs(&mut self, inputs: Vec<f64>) {
+        self.layers[0]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, n)| n.unwrap_start_mut().set_value(inputs[i]));
     }
 }
 

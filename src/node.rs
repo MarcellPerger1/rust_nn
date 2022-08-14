@@ -1,5 +1,6 @@
 use crate::network::Network;
 use crate::sigmoid::Sigmoid;
+use crate::util::expect_cast;
 use std::cell::RefCell;
 
 #[derive(Debug)]
@@ -13,6 +14,14 @@ impl AnyNode {
             Self::Start(v) => v.get_value(n),
             Self::Normal(v) => v.get_value(n),
         }
+    }
+
+    pub fn unwrap_start(&self) -> &StartNode {
+        expect_cast!(self, AnyNode::Start)
+    }
+
+    pub fn unwrap_start_mut(&mut self) -> &mut StartNode {
+        expect_cast!(self, AnyNode::Start)
     }
 }
 
@@ -30,6 +39,7 @@ pub struct Node {
     pub bias_nudge_sum: f64,
     pub inp_w_nudge_sum: Vec<f64>,
     pub nudge_cnt: i32,
+    pub requested_nudge: f64,
 }
 impl Node {
     pub fn new(bias: f64, inp_w: &Vec<f64>, layer: usize) -> Node {
@@ -43,6 +53,7 @@ impl Node {
             bias_nudge_sum: 0.0,
             inp_w_nudge_sum: Vec::new(),
             nudge_cnt: 0,
+            requested_nudge: 0.0,
         };
     }
     pub fn invalidate(&self) {
