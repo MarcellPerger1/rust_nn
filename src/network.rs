@@ -1,6 +1,5 @@
 use crate::node::*;
-use crate::util::expect_cast;
-use crate::*;
+use crate::util::{expect_cast, error_f};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;

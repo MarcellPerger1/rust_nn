@@ -6,10 +6,6 @@ mod util;
 use crate::network::Network;
 use crate::node::NodeValue;
 
-fn error_f(a: f64, b: f64) -> f64 {
-    (a - b).powi(2) // cleaner and (with optimisations) probably just as fast as *
-}
-
 macro_rules! assert_cached_eq {
     ($network:expr, $ni:expr, $li:expr, $val:expr) => {
         assert_eq!(
