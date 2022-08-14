@@ -58,6 +58,10 @@ impl Network {
         }
     }
 
+    pub fn get_output(&self, i: usize) -> f64 {
+        self.layers.last().expect("Network must have layers!")[i].get_value(&self)
+    }
+
     pub fn get_outputs(&self) -> Vec<f64> {
         self.layers
             .last()
@@ -65,6 +69,10 @@ impl Network {
             .iter()
             .map(|n| n.get_value(&self))
             .collect()
+    }
+
+    pub fn set_input(&mut self, i: usize, value: f64) {
+        self.get_start_node_mut(i).set_value(value)
     }
 
     pub fn set_inputs(&mut self, inputs: Vec<f64>) {
