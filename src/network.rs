@@ -37,12 +37,7 @@ impl Network {
         self.layers[self.shape.len() - 1]
             .iter()
             .enumerate()
-            .map(|(i, n)| {
-                error_f(
-                    expected[i],
-                    n.get_value(&self),
-                )
-            })
+            .map(|(i, n)| error_f(expected[i], n.get_value(&self)))
             .sum()
     }
 
@@ -74,11 +69,12 @@ impl Network {
     }
 
     pub fn set_inputs(&mut self, inputs: Vec<f64>) {
-        self.layers[0]
-            .iter_mut()
-            .enumerate()
-            .for_each(|(i, n)| 
-                      n.as_any_mut().downcast_mut::<StartNode>().unwrap().set_value(inputs[i]));
+        self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
+            n.as_any_mut()
+                .downcast_mut::<StartNode>()
+                .unwrap()
+                .set_value(inputs[i])
+        });
     }
 }
 
@@ -107,7 +103,10 @@ impl Network {
         self.get_node(0, ni).as_any().downcast_ref().unwrap()
     }
     pub fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
-        self.get_node_mut(0, ni).as_any_mut().downcast_mut().unwrap()
+        self.get_node_mut(0, ni)
+            .as_any_mut()
+            .downcast_mut()
+            .unwrap()
     }
     pub fn get_main_node(&self, li: usize, ni: usize) -> &Node {
         assert_ne!(li, 0, "no main nodes in layer 0");
@@ -115,6 +114,9 @@ impl Network {
     }
     pub fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
         assert_ne!(li, 0, "no main nodes in layer 0");
-        self.get_node_mut(li, ni).as_any_mut().downcast_mut().unwrap()
+        self.get_node_mut(li, ni)
+            .as_any_mut()
+            .downcast_mut()
+            .unwrap()
     }
 }

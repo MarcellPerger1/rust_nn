@@ -10,7 +10,7 @@ pub trait AsAny {
 }
 
 // tod make a Derive() for this
-macro_rules! impl_as_any{
+macro_rules! impl_as_any {
     ($name:path) => {
         impl $crate::node::AsAny for $name {
             fn as_any(&self) -> &dyn ::std::any::Any {
@@ -23,14 +23,13 @@ macro_rules! impl_as_any{
     };
 }
 
-pub trait NodeLike : AsAny + std::fmt::Debug {
+pub trait NodeLike: AsAny + std::fmt::Debug {
     fn get_value(&self, network: &Network) -> f64;
 
     fn invalidate(&self) {
         // do nothing by default
     }
 }
-
 
 #[derive(Debug)]
 pub struct Node {
