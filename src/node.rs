@@ -1,6 +1,6 @@
 use crate::network::Network;
 use crate::sigmoid::Sigmoid;
-use crate::util::{AsAny, impl_as_any};
+use crate::util::{impl_as_any, AsAny};
 use std::cell::RefCell;
 
 pub type AnyNode = Box<dyn NodeLike>;
@@ -11,6 +11,10 @@ pub trait NodeLike: AsAny + std::fmt::Debug {
     fn invalidate(&self) {
         // do nothing by default
     }
+}
+
+pub fn new_node<T: NodeLike + 'static>(n: T) -> AnyNode {
+    Box::new(n) as AnyNode
 }
 
 #[derive(Debug)]

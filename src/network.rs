@@ -1,4 +1,4 @@
-use crate::node::{AnyNode, StartNode, Node, NodeLike};
+use crate::node::{new_node, AnyNode, Node, StartNode};
 use crate::util::error_f;
 
 pub type LayerT = Vec<AnyNode>;
@@ -20,9 +20,9 @@ impl Network {
                 (0..*n)
                     .map(|_| -> AnyNode {
                         if i != 0 {
-                            Box::new(Node::new(0., &vec![0.; shape[i - 1]], i)) as Box<dyn NodeLike>
+                            new_node(Node::new(0., &vec![0.; shape[i - 1]], i))
                         } else {
-                            Box::new(StartNode::new(0.)) as Box<dyn NodeLike>
+                            new_node(StartNode::new(0.))
                         }
                     })
                     .collect::<LayerT>()
@@ -100,23 +100,24 @@ impl Network {
     }
 
     pub fn get_start_node(&self, ni: usize) -> &StartNode {
-        self.get_node(0, ni).as_any().downcast_ref().unwrap()
+        self.get_node_as(0, ni).unwrap()
     }
     pub fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
-        self.get_node_mut(0, ni)
-            .as_any_mut()
-            .downcast_mut()
-            .unwrap()
+        self.get_node_as_mut(0, ni).unwrap()
     }
     pub fn get_main_node(&self, li: usize, ni: usize) -> &Node {
         assert_ne!(li, 0, "no main nodes in layer 0");
-        self.get_node(li, ni).as_any().downcast_ref().unwrap()
+        self.get_node_as(li, ni).unwrap()
     }
     pub fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
         assert_ne!(li, 0, "no main nodes in layer 0");
-        self.get_node_mut(li, ni)
-            .as_any_mut()
-            .downcast_mut()
-            .unwrap()
+        self.get_node_as_mut(li, ni).unwrap()
+    }
+
+    pub fn get_node_as<T: 'static>(&self, li: usize, ni: usize) -> Option<&T> {
+        self.get_node(li, ni).as_any().downcast_ref()
+    }
+    pub fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
+        self.get_node_mut(li, ni).as_any_mut().downcast_mut()
     }
 }
