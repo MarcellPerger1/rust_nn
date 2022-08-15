@@ -1,27 +1,9 @@
 use crate::network::Network;
 use crate::sigmoid::Sigmoid;
+use crate::util::{AsAny, impl_as_any};
 use std::cell::RefCell;
 
 pub type AnyNode = Box<dyn NodeLike>;
-
-pub trait AsAny {
-    fn as_any(&self) -> &dyn std::any::Any;
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
-}
-
-// tod make a Derive() for this
-macro_rules! impl_as_any {
-    ($name:path) => {
-        impl $crate::node::AsAny for $name {
-            fn as_any(&self) -> &dyn ::std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn ::std::any::Any {
-                self
-            }
-        }
-    };
-}
 
 pub trait NodeLike: AsAny + std::fmt::Debug {
     fn get_value(&self, network: &Network) -> f64;
