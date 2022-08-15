@@ -1,33 +1,36 @@
 use crate::network::Network;
 use crate::sigmoid::Sigmoid;
-use crate::util::expect_cast;
 use std::cell::RefCell;
 
-#[derive(Debug)]
-pub enum AnyNode {
-    Start(StartNode),
-    Normal(Node),
+pub type AnyNode = Box<dyn NodeLike>;
+
+pub trait AsAny {
+    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
-impl AnyNode {
-    pub fn get_value(&self, n: &Network) -> f64 {
-        match self {
-            Self::Start(v) => v.get_value(n),
-            Self::Normal(v) => v.get_value(n),
+
+// tod make a Derive() for this
+macro_rules! impl_as_any{
+    ($name:path) => {
+        impl $crate::node::AsAny for $name {
+            fn as_any(&self) -> &dyn ::std::any::Any {
+                self
+            }
+            fn as_any_mut(&mut self) -> &mut dyn ::std::any::Any {
+                self
+            }
         }
-    }
-
-    pub fn unwrap_start(&self) -> &StartNode {
-        expect_cast!(self, AnyNode::Start)
-    }
-
-    pub fn unwrap_start_mut(&mut self) -> &mut StartNode {
-        expect_cast!(self, AnyNode::Start)
-    }
+    };
 }
 
-pub trait NodeValue {
+pub trait NodeLike : AsAny + std::fmt::Debug {
     fn get_value(&self, network: &Network) -> f64;
+
+    fn invalidate(&self) {
+        // do nothing by default
+    }
 }
+
 
 #[derive(Debug)]
 pub struct Node {
@@ -83,8 +86,8 @@ impl Node {
         inp_sum
     }
 }
-
-impl NodeValue for Node {
+impl_as_any!(Node);
+impl NodeLike for Node {
     // have to pass it in because circular data structures in Rust never end well
     // (that time i tried to implement a (doubly) linked list using only safe Rust,
     // it did not go well)
@@ -103,7 +106,8 @@ impl NodeValue for Node {
 pub struct StartNode {
     pub(crate) value: f64,
 }
-impl NodeValue for StartNode {
+impl_as_any!(StartNode);
+impl NodeLike for StartNode {
     fn get_value(&self, _: &Network) -> f64 {
         self.value
     }

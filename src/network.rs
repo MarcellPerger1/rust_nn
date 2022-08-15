@@ -1,5 +1,5 @@
 use crate::node::*;
-use crate::util::{expect_cast, error_f};
+use crate::util::error_f;
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
@@ -18,12 +18,11 @@ impl Network {
             .enumerate()
             .map(|(i, n)| {
                 (0..*n)
-                    .map(|_| {
-                        // todo move this conditional out of the closure
+                    .map(|_| -> AnyNode {
                         if i != 0 {
-                            AnyNode::Normal(Node::new(0., &vec![0.; shape[i - 1]], i))
+                            Box::new(Node::new(0., &vec![0.; shape[i - 1]], i)) as Box<dyn NodeLike>
                         } else {
-                            AnyNode::Start(StartNode::new(0.))
+                            Box::new(StartNode::new(0.)) as Box<dyn NodeLike>
                         }
                     })
                     .collect::<LayerT>()
@@ -41,7 +40,7 @@ impl Network {
             .map(|(i, n)| {
                 error_f(
                     expected[i],
-                    expect_cast!(n=>AnyNode::Normal).get_value(&self),
+                    n.get_value(&self),
                 )
             })
             .sum()
@@ -52,7 +51,7 @@ impl Network {
         li.next();
         for l in li {
             for n in l {
-                expect_cast!(n => AnyNode::Normal).invalidate();
+                n.invalidate();
             }
         }
     }
@@ -78,7 +77,8 @@ impl Network {
         self.layers[0]
             .iter_mut()
             .enumerate()
-            .for_each(|(i, n)| n.unwrap_start_mut().set_value(inputs[i]));
+            .for_each(|(i, n)| 
+                      n.as_any_mut().downcast_mut::<StartNode>().unwrap().set_value(inputs[i]));
     }
 }
 
@@ -104,17 +104,17 @@ impl Network {
     }
 
     pub fn get_start_node(&self, ni: usize) -> &StartNode {
-        expect_cast!(self.get_node(0, ni) => AnyNode::Start)
+        self.get_node(0, ni).as_any().downcast_ref().unwrap()
     }
     pub fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
-        expect_cast!(self.get_node_mut(0, ni) => AnyNode::Start)
+        self.get_node_mut(0, ni).as_any_mut().downcast_mut().unwrap()
     }
     pub fn get_main_node(&self, li: usize, ni: usize) -> &Node {
         assert_ne!(li, 0, "no main nodes in layer 0");
-        expect_cast!(self.get_node(li, ni) => AnyNode::Normal)
+        self.get_node(li, ni).as_any().downcast_ref().unwrap()
     }
     pub fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
         assert_ne!(li, 0, "no main nodes in layer 0");
-        expect_cast!(self.get_node_mut(li, ni) => AnyNode::Normal)
+        self.get_node_mut(li, ni).as_any_mut().downcast_mut().unwrap()
     }
 }

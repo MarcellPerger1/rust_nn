@@ -12,7 +12,7 @@ macro_rules! expect_cast {
     }
 }
 
-pub(crate) use expect_cast;
+pub use expect_cast;
 
 
 pub fn error_f(a: f64, b: f64) -> f64 {

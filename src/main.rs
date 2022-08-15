@@ -4,7 +4,7 @@ pub mod sigmoid;
 mod util;
 
 use crate::network::Network;
-use crate::node::NodeValue;
+use crate::node::NodeLike;
 
 macro_rules! assert_cached_eq {
     ($network:expr, $ni:expr, $li:expr, $val:expr) => {
