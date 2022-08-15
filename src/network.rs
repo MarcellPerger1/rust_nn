@@ -83,22 +83,22 @@ impl Network {
 }
 
 impl Network {
-    pub fn request_nudges_end(&mut self, expected: Vec<f64>) {
+    pub fn request_nudges_end(&self, expected: Vec<f64>) {
         let outputs = self.get_outputs();
         self.layers[self.shape.len() - 1]
-            .iter_mut()
+            .iter()
             .enumerate()
             .for_each(|(i, n)| {
-                let node = n.try_into_ref_mut::<Node>().unwrap();
+                let node = n.try_into_ref::<Node>().unwrap();
                 node.request_nudge(error_deriv(outputs[i], expected[i]));
             });
     }
 
-    pub fn train_on_current_data(&mut self, expected: Vec<f64>) {
+    pub fn train_on_current_data(&self, expected: Vec<f64>) {
         self.request_nudges_end(expected);
         (1..self.layers.len()).rev().for_each(|li| {
             (0..self.layers[li].len()).for_each(|ni| {
-                self.get_main_node_mut(li, ni).apply_nudge(self);
+                self.get_main_node(li, ni).apply_nudge(self);
             })
         })
     }

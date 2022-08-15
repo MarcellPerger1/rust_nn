@@ -12,7 +12,7 @@ pub trait NodeLike: AsAny + std::fmt::Debug {
         // do nothing by default
     }
 
-    fn request_nudge(&mut self, _nudge: f64) {}
+    fn request_nudge(&self, _nudge: f64) {}
 }
 
 impl TryIntoRef for dyn NodeLike {
@@ -37,10 +37,10 @@ pub struct Node {
     pub layer: usize,
     pub(crate) sum_cache: RefCell<Option<f64>>,
     pub(crate) result_cache: RefCell<Option<f64>>,
-    pub bias_nudge_sum: f64,
-    pub inp_w_nudge_sum: Vec<f64>,
-    pub nudge_cnt: i32,
-    pub requested_nudge: f64,
+    pub bias_nudge_sum: RefCell<f64>,
+    pub inp_w_nudge_sum: RefCell<Vec<f64>>,
+    pub nudge_cnt: RefCell<i32>,
+    pub requested_nudge: RefCell<f64>,
 }
 impl_as_any!(Node);
 impl Node {
@@ -52,10 +52,10 @@ impl Node {
             layer,
             result_cache: RefCell::new(None),
             sum_cache: RefCell::new(None),
-            bias_nudge_sum: 0.0,
-            inp_w_nudge_sum: Vec::new(),
-            nudge_cnt: 0,
-            requested_nudge: 0.0,
+            bias_nudge_sum: RefCell::new(0.0),
+            inp_w_nudge_sum: RefCell::new(Vec::new()),
+            nudge_cnt: RefCell::new(0),
+            requested_nudge: RefCell::new(0.0),
         };
     }
     pub fn invalidate(&self) {
@@ -74,22 +74,23 @@ impl Node {
         self.inp_w[wi] = v;
     }
 
-    pub fn apply_nudge(&mut self, network: &mut Network) {
+    // todo rename -> calc_nudge
+    pub fn apply_nudge(&self, network: &Network) {
         let lr = 1.0;  // learning rate; hard-coded for now
         let d_sig = self.get_sum(network);
-        let base_nudge = self.requested_nudge * d_sig * lr;
+        let base_nudge = *self.requested_nudge.borrow() * d_sig * lr;
         // bias nudge
-        self.bias_nudge_sum += base_nudge;  // * 1.0
+        *self.bias_nudge_sum.borrow_mut() += base_nudge;  // * 1.0
         // weight nudges
         (0..self.inp_w.len()).for_each(|i| {
-            self.inp_w_nudge_sum[i] += base_nudge * network.get_node(self.layer - 1, i).get_value(network);
-            network.get_node_mut(self.layer - 1, i).request_nudge(base_nudge * self.inp_w[i])
+            (*self.inp_w_nudge_sum.borrow_mut())[i] += base_nudge * network.get_node(self.layer - 1, i).get_value(network);
+            network.get_node(self.layer - 1, i).request_nudge(base_nudge * self.inp_w[i])
         });
-        self.nudge_cnt += 1;
+        (*self.nudge_cnt.borrow_mut()) += 1;
     }
 
-    pub fn request_nudge(&mut self, nudge: f64) {
-        self.requested_nudge += nudge;
+    pub fn request_nudge(&self, nudge: f64) {
+        *self.requested_nudge.borrow_mut() += nudge;
     }
 
     pub fn get_sum(&self, network: &Network) -> f64 {
