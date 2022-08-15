@@ -3,7 +3,7 @@ pub fn error_f(a: f64, b: f64) -> f64 {
 }
 
 pub fn error_deriv(output: f64, expected: f64) -> f64 {
-    2.0*(output - expected)
+    2.0 * (output - expected)
 }
 
 pub trait AsAny {

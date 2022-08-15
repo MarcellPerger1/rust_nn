@@ -85,6 +85,10 @@ impl Node {
         self.sum_cache.replace(Some(inp_sum));
         inp_sum
     }
+
+    pub(crate) fn request_nudge(&mut self, nudge: f64) {
+        self.requested_nudge += nudge;
+    }
 }
 impl_as_any!(Node);
 impl NodeLike for Node {

@@ -1,11 +1,11 @@
 use crate::node::{new_node, AnyNode, Node, StartNode};
-use crate::util::{error_f, TryIntoRef, TryIntoRefMut};
+use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
 #[derive(Debug)]
 pub struct Network {
-    pub(crate) shape: Vec<usize>,
+    pub shape: Vec<usize>,
     pub(crate) layers: NetworkLayersT,
 }
 
@@ -13,6 +13,7 @@ pub struct Network {
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
         let shape = shape.clone();
+        assert!(shape.len() >= 2);
         let layers = shape
             .iter()
             .enumerate()
@@ -52,7 +53,7 @@ impl Network {
     }
 }
 
-
+// inputs/outputs
 impl Network {
     pub fn get_output(&self, i: usize) -> f64 {
         self.layers.last().expect("Network must have layers!")[i].get_value(&self)
@@ -81,6 +82,19 @@ impl Network {
     }
 }
 
+impl Network {
+    pub fn requeste_nudges_end(&mut self, inputs: Vec<f64>) {
+        let outputs = self.get_outputs();
+        self.layers[self.shape.len() - 1]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, n)| {
+                n.try_into_ref_mut::<Node>()
+                    .unwrap()
+                    .request_nudge(error_deriv(outputs[i], inputs[i]));
+            });
+    }
+}
 
 // indexing stuff
 impl Network {
