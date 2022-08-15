@@ -1,32 +1,38 @@
 use crate::network::Network;
 use crate::sigmoid::Sigmoid;
-use crate::util::expect_cast;
+use crate::util::{impl_as_any, AsAny};
 use std::cell::RefCell;
 
-#[derive(Debug)]
-pub enum AnyNode {
-    Start(StartNode),
-    Normal(Node),
-}
-impl AnyNode {
-    pub fn get_value(&self, n: &Network) -> f64 {
-        match self {
-            Self::Start(v) => v.get_value(n),
-            Self::Normal(v) => v.get_value(n),
-        }
-    }
+pub type AnyNode = Box<dyn NodeLike>;
 
-    pub fn unwrap_start(&self) -> &StartNode {
-        expect_cast!(self, AnyNode::Start)
-    }
-
-    pub fn unwrap_start_mut(&mut self) -> &mut StartNode {
-        expect_cast!(self, AnyNode::Start)
-    }
-}
-
-pub trait NodeValue {
+pub trait NodeLike: AsAny + std::fmt::Debug {
     fn get_value(&self, network: &Network) -> f64;
+
+    fn invalidate(&self) {
+        // do nothing by default
+    }
+}
+
+pub trait TryIntoRef {
+    fn try_into_ref<T: 'static>(&self) -> Option<&T>;
+}
+pub trait TryIntoRefMut {
+    fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T>;
+}
+
+impl TryIntoRef for dyn NodeLike {
+    fn try_into_ref<T: 'static>(&self) -> Option<&T> {
+        self.as_any().downcast_ref()
+    }
+}
+impl TryIntoRefMut for dyn NodeLike {
+    fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        self.as_any_mut().downcast_mut()
+    }
+}
+
+pub fn new_node<T: NodeLike + 'static>(n: T) -> AnyNode {
+    Box::new(n) as AnyNode
 }
 
 #[derive(Debug)]
@@ -83,8 +89,8 @@ impl Node {
         inp_sum
     }
 }
-
-impl NodeValue for Node {
+impl_as_any!(Node);
+impl NodeLike for Node {
     // have to pass it in because circular data structures in Rust never end well
     // (that time i tried to implement a (doubly) linked list using only safe Rust,
     // it did not go well)
@@ -103,7 +109,8 @@ impl NodeValue for Node {
 pub struct StartNode {
     pub(crate) value: f64,
 }
-impl NodeValue for StartNode {
+impl_as_any!(StartNode);
+impl NodeLike for StartNode {
     fn get_value(&self, _: &Network) -> f64 {
         self.value
     }

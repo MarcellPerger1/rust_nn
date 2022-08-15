@@ -1,20 +1,25 @@
-#[macro_export]
-macro_rules! expect_cast {
-    ($var:expr => $t:path) => {
-        if let $t(v) = $var {
-            v
-        } else {
-            unreachable!()
-        }
-    };
-    ($var:expr, $t:path) => {
-        expect_cast!($var => $t)
-    }
-}
-
-pub(crate) use expect_cast;
-
-
 pub fn error_f(a: f64, b: f64) -> f64 {
     (a - b).powi(2) // cleaner and (with optimisations) probably just as fast as *
 }
+
+pub trait AsAny {
+    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
+}
+
+// tod make a Derive() for this
+#[macro_export]
+macro_rules! impl_as_any {
+    ($name:path) => {
+        impl $crate::node::AsAny for $name {
+            fn as_any(&self) -> &dyn ::std::any::Any {
+                self
+            }
+            fn as_any_mut(&mut self) -> &mut dyn ::std::any::Any {
+                self
+            }
+        }
+    };
+}
+
+pub use impl_as_any;
