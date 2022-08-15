@@ -102,7 +102,7 @@ impl Network {
         self.request_nudges_end(expected);
         (1..self.layers.len()).rev().for_each(|li| {
             (0..self.layers[li].len()).for_each(|ni| {
-                self.get_main_node(li, ni).apply_nudge(self);
+                self.get_main_node(li, ni).calc_nudge(self);
             })
         })
     }

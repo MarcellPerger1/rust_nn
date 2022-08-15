@@ -75,8 +75,7 @@ impl Node {
         self.inp_w[wi] = v;
     }
 
-    // todo rename -> calc_nudge
-    pub fn apply_nudge(&self, network: &Network) {
+    pub fn calc_nudge(&self, network: &Network) {
         let lr = 1.0;  // learning rate; hard-coded for now
         let d_sig = self.get_sum(network);
         let base_nudge = *self.requested_nudge.borrow() * d_sig * lr;
