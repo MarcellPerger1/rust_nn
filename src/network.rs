@@ -1,4 +1,4 @@
-use crate::node::{new_node, AnyNode, Node, StartNode};
+use crate::node::{new_node, AnyNode, Node, StartNode, TryIntoRef, TryIntoRefMut};
 use crate::util::error_f;
 
 pub type LayerT = Vec<AnyNode>;
@@ -115,9 +115,9 @@ impl Network {
     }
 
     pub fn get_node_as<T: 'static>(&self, li: usize, ni: usize) -> Option<&T> {
-        self.get_node(li, ni).as_any().downcast_ref()
+        self.get_node(li, ni).try_into_ref()
     }
     pub fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
-        self.get_node_mut(li, ni).as_any_mut().downcast_mut()
+        self.get_node_mut(li, ni).try_into_ref_mut()
     }
 }

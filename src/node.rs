@@ -13,6 +13,24 @@ pub trait NodeLike: AsAny + std::fmt::Debug {
     }
 }
 
+pub trait TryIntoRef {
+    fn try_into_ref<T: 'static>(&self) -> Option<&T>;
+}
+pub trait TryIntoRefMut {
+    fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T>;
+}
+
+impl TryIntoRef for dyn NodeLike {
+    fn try_into_ref<T: 'static>(&self) -> Option<&T> {
+        self.as_any().downcast_ref()
+    }
+}
+impl TryIntoRefMut for dyn NodeLike {
+    fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        self.as_any_mut().downcast_mut()
+    }
+}
+
 pub fn new_node<T: NodeLike + 'static>(n: T) -> AnyNode {
     Box::new(n) as AnyNode
 }
