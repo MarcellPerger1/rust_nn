@@ -60,6 +60,10 @@ impl Node {
         self.result_cache.replace(None);
     }
 
+    pub fn is_last_layer(&self, network: &Network) -> bool {
+        self.layer == network.shape.len() - 1
+    }
+
     pub fn get_weight(&self, wi: usize) -> f64 {
         self.inp_w[wi]
     }

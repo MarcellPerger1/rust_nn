@@ -5,8 +5,8 @@ pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
 #[derive(Debug)]
 pub struct Network {
-    shape: Vec<usize>,
-    layers: NetworkLayersT,
+    pub(crate) shape: Vec<usize>,
+    pub(crate) layers: NetworkLayersT,
 }
 
 // main impl
