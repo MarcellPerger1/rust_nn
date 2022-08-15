@@ -11,6 +11,8 @@ pub trait NodeLike: AsAny + std::fmt::Debug {
     fn invalidate(&self) {
         // do nothing by default
     }
+
+    fn request_nudge(&mut self, _nudge: f64) {}
 }
 
 impl TryIntoRef for dyn NodeLike {
@@ -40,6 +42,7 @@ pub struct Node {
     pub nudge_cnt: i32,
     pub requested_nudge: f64,
 }
+impl_as_any!(Node);
 impl Node {
     pub fn new(bias: f64, inp_w: &Vec<f64>, layer: usize) -> Node {
         let inp_w = inp_w.clone();
@@ -71,6 +74,23 @@ impl Node {
         self.inp_w[wi] = v;
     }
 
+    pub fn apply_nudge(&mut self, network: &mut Network) {
+        let lr = 1.0;  // learning rate; hard-coded for now
+        let d_sig = self.get_sum(network);
+        let base_nudge = self.requested_nudge * d_sig * lr;
+        // bias nudge
+        self.bias_nudge_sum += base_nudge;  // * 1.0
+        // weight nudges
+        (0..self.inp_w.len()).for_each(|i| {
+            self.inp_w_nudge_sum[i] += base_nudge * network.get_node(self.layer - 1, i).get_value(network);
+            network.get_node_mut(self.layer - 1, i).request_nudge(base_nudge * self.inp_w[i])
+        })
+    }
+
+    pub fn request_nudge(&mut self, nudge: f64) {
+        self.requested_nudge += nudge;
+    }
+
     pub fn get_sum(&self, network: &Network) -> f64 {
         if let Some(cached) = *self.result_cache.borrow() {
             return cached;
@@ -85,12 +105,7 @@ impl Node {
         self.sum_cache.replace(Some(inp_sum));
         inp_sum
     }
-
-    pub(crate) fn request_nudge(&mut self, nudge: f64) {
-        self.requested_nudge += nudge;
-    }
 }
-impl_as_any!(Node);
 impl NodeLike for Node {
     // have to pass it in because circular data structures in Rust never end well
     // (that time i tried to implement a (doubly) linked list using only safe Rust,

@@ -89,9 +89,8 @@ impl Network {
             .iter_mut()
             .enumerate()
             .for_each(|(i, n)| {
-                n.try_into_ref_mut::<Node>()
-                    .unwrap()
-                    .request_nudge(error_deriv(outputs[i], inputs[i]));
+                let node = n.try_into_ref_mut::<Node>().unwrap();
+                node.request_nudge(error_deriv(outputs[i], inputs[i]));
             });
     }
 }
