@@ -45,6 +45,7 @@ pub struct Node {
 impl_as_any!(Node);
 impl Node {
     pub fn new(bias: f64, inp_w: &Vec<f64>, layer: usize) -> Node {
+        let inp_w_nudge_sum = RefCell::new(vec![0.0; inp_w.len()]);
         let inp_w = inp_w.clone();
         return Self {
             bias,
@@ -53,7 +54,7 @@ impl Node {
             result_cache: RefCell::new(None),
             sum_cache: RefCell::new(None),
             bias_nudge_sum: RefCell::new(0.0),
-            inp_w_nudge_sum: RefCell::new(Vec::new()),
+            inp_w_nudge_sum,
             nudge_cnt: RefCell::new(0),
             requested_nudge: RefCell::new(0.0),
         };

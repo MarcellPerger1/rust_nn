@@ -84,13 +84,17 @@ impl Network {
 
 impl Network {
     pub fn request_nudges_end(&self, expected: Vec<f64>) {
+        
         let outputs = self.get_outputs();
         self.layers[self.shape.len() - 1]
             .iter()
             .enumerate()
             .for_each(|(i, n)| {
                 let node = n.try_into_ref::<Node>().unwrap();
-                node.request_nudge(error_deriv(outputs[i], expected[i]));
+                let mut want_nudge = error_deriv(outputs[i], expected[i]);
+                // want to lower cost = move towards least positive gradient
+                want_nudge *= -1.0;
+                node.request_nudge(want_nudge);
             });
     }
 
