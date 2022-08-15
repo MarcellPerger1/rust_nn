@@ -83,7 +83,7 @@ impl Network {
 }
 
 impl Network {
-    pub fn requeste_nudges_end(&mut self, inputs: Vec<f64>) {
+    pub fn request_nudges_end(&mut self, inputs: Vec<f64>) {
         let outputs = self.get_outputs();
         self.layers[self.shape.len() - 1]
             .iter_mut()
