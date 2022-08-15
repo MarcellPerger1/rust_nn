@@ -50,7 +50,10 @@ impl Network {
             }
         }
     }
+}
 
+
+impl Network {
     pub fn get_output(&self, i: usize) -> f64 {
         self.layers.last().expect("Network must have layers!")[i].get_value(&self)
     }
@@ -77,6 +80,7 @@ impl Network {
         });
     }
 }
+
 
 // indexing stuff
 impl Network {
