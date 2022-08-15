@@ -1,5 +1,5 @@
-use crate::node::{new_node, AnyNode, Node, StartNode, TryIntoRef, TryIntoRefMut};
-use crate::util::error_f;
+use crate::node::{new_node, AnyNode, Node, StartNode};
+use crate::util::{error_f, TryIntoRef, TryIntoRefMut};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;

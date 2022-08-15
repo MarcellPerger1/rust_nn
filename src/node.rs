@@ -1,6 +1,6 @@
 use crate::network::Network;
 use crate::sigmoid::Sigmoid;
-use crate::util::{impl_as_any, AsAny};
+use crate::util::{impl_as_any, AsAny, TryIntoRef, TryIntoRefMut};
 use std::cell::RefCell;
 
 pub type AnyNode = Box<dyn NodeLike>;
@@ -11,13 +11,6 @@ pub trait NodeLike: AsAny + std::fmt::Debug {
     fn invalidate(&self) {
         // do nothing by default
     }
-}
-
-pub trait TryIntoRef {
-    fn try_into_ref<T: 'static>(&self) -> Option<&T>;
-}
-pub trait TryIntoRefMut {
-    fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T>;
 }
 
 impl TryIntoRef for dyn NodeLike {

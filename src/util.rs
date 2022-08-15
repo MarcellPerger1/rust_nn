@@ -7,6 +7,13 @@ pub trait AsAny {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
+pub trait TryIntoRef {
+    fn try_into_ref<T: 'static>(&self) -> Option<&T>;
+}
+pub trait TryIntoRefMut {
+    fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T>;
+}
+
 // tod make a Derive() for this
 #[macro_export]
 macro_rules! impl_as_any {
