@@ -84,7 +84,8 @@ impl Node {
         (0..self.inp_w.len()).for_each(|i| {
             self.inp_w_nudge_sum[i] += base_nudge * network.get_node(self.layer - 1, i).get_value(network);
             network.get_node_mut(self.layer - 1, i).request_nudge(base_nudge * self.inp_w[i])
-        })
+        });
+        self.nudge_cnt += 1;
     }
 
     pub fn request_nudge(&mut self, nudge: f64) {
