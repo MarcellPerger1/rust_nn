@@ -76,15 +76,19 @@ impl Node {
     }
 
     pub fn calc_nudge(&self, network: &Network) {
-        let lr = 1.0;  // learning rate; hard-coded for now
+        let lr = 1.0; // learning rate; hard-coded for now
         let d_sig = self.get_sum(network);
         let base_nudge = *self.requested_nudge.borrow() * d_sig * lr;
         // bias nudge
-        *self.bias_nudge_sum.borrow_mut() += base_nudge;  // * 1.0
-        // weight nudges
+        *self.bias_nudge_sum.borrow_mut() += base_nudge;
         (0..self.inp_w.len()).for_each(|i| {
-            (*self.inp_w_nudge_sum.borrow_mut())[i] += base_nudge * network.get_node(self.layer - 1, i).get_value(network);
-            network.get_node(self.layer - 1, i).request_nudge(base_nudge * self.inp_w[i])
+            // weight nudges
+            (*self.inp_w_nudge_sum.borrow_mut())[i] +=
+                base_nudge * network.get_node(self.layer - 1, i).get_value(network);
+            // nudge previous nodes
+            network
+                .get_node(self.layer - 1, i)
+                .request_nudge(base_nudge * self.inp_w[i])
         });
         (*self.nudge_cnt.borrow_mut()) += 1;
     }

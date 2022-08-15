@@ -49,7 +49,10 @@ fn run_checks() {
     assert_eq!(nw.get_current_cost(&vec![0.5, 1.0]), 0.07232948812851325);
     nw.train_on_current_data(vec![0.5, 0.5]);
     assert_refcell_eq!(nw.get_main_node(1, 1).requested_nudge, -0.4621171572600098);
-    assert_refcell_eq!(nw.get_main_node(1, 1).inp_w_nudge_sum, vec![0.0, -0.3378347121470412]);
+    assert_refcell_eq!(
+        nw.get_main_node(1, 1).inp_w_nudge_sum,
+        vec![0.0, -0.3378347121470412]
+    );
     assert_refcell_eq!(nw.get_main_node(1, 1).bias_nudge_sum, -0.3378347121470412);
     println!("{:#?}", nw);
 }
