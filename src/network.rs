@@ -74,8 +74,7 @@ impl Network {
 
     pub fn set_inputs(&mut self, inputs: Vec<f64>) {
         self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
-            n.as_any_mut()
-                .downcast_mut::<StartNode>()
+            n.try_into_ref_mut::<StartNode>()
                 .unwrap()
                 .set_value(inputs[i])
         });
