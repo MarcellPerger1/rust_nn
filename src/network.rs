@@ -99,11 +99,11 @@ impl Network {
 
     pub fn train_on_current_data(&self, expected: Vec<f64>) {
         self.request_nudges_end(expected);
-        (1..self.layers.len()).rev().for_each(|li| {
-            (0..self.layers[li].len()).for_each(|ni| {
-                self.get_main_node(li, ni).calc_nudge(self);
+        self.layers.iter().skip(1).rev().for_each(|l| {
+            l.iter().for_each(|n| {
+                n.try_into_ref::<Node>().unwrap().calc_nudge(self);
             })
-        })
+        });
     }
 }
 
