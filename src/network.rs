@@ -6,7 +6,7 @@ pub type NetworkLayersT = Vec<LayerT>;
 #[derive(Debug)]
 pub struct Network {
     pub shape: Vec<usize>,
-    pub(crate) layers: NetworkLayersT,
+    pub layers: NetworkLayersT,
 }
 
 // main impl
@@ -118,11 +118,11 @@ impl Network {
         &mut self.layers
     }
     pub fn get_layer(&self, i: usize) -> &LayerT {
-        &self.layers_ref()[i]
+        &self.layers[i]
     }
 
     pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
-        &self.get_layer(li)[ni]
+        &self.layers[li][ni]
     }
     pub fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode {
         &mut self.layers[li][ni]
