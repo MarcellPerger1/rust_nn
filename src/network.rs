@@ -67,13 +67,11 @@ impl Network {
     }
 
     pub fn invalidate(&self) {
-        let mut li = self.layers.iter();
-        li.next();
-        for l in li {
-            for n in l {
+        self.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
                 n.invalidate();
-            }
-        }
+            })
+        });
     }
 }
 
@@ -132,7 +130,26 @@ impl Network {
         self.invalidate();
         self.train_on_current_data(expected);
     }
+
+    pub fn clear_nudges(&mut self) {
+        self.layers.iter_mut().skip(1).for_each(|l| {
+            l.iter_mut().for_each(|n| {
+                n.try_into_ref_mut::<Node>().unwrap().clear_nudges();
+            })
+        })
+    }
+
+    pub fn apply_nudges(&mut self) {
+        self.layers.iter_mut().skip(1).for_each(|l| {
+            l.iter_mut().for_each(|n| {
+                let n = n.try_into_ref_mut::<Node>().unwrap();
+                n.apply_nudges();
+                n.clear_nudges();
+            })
+        });
+    }
 }
+
 
 // indexing stuff
 impl Network {
