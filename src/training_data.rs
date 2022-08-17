@@ -15,7 +15,11 @@ pub struct TrainingData (Vec<TrainingExample>);
 
 impl TrainingData {
     pub fn chunks(&self, size: usize) -> Vec<TrainingData>{
-        self.0.chunks(size).map(|c| TrainingData(c.to_vec())).collect()
+        self.iter_chunks(size).collect()
+    }
+
+    pub fn iter_chunks(&self, size: usize) -> impl Iterator<Item = TrainingData> + '_ {
+        self.0.chunks(size).map(|c| TrainingData(c.to_vec()))
     }
 }
 
