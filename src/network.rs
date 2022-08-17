@@ -1,5 +1,6 @@
 use crate::node::{new_node, AnyNode, Node, StartNode};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
+use crate::training_data::TrainingExample;
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
@@ -125,10 +126,10 @@ impl Network {
         });
     }
 
-    pub fn train_on_data(&mut self, inputs: &Vec<f64>, expected: &Vec<f64>) {
-        self.set_inputs(inputs);
+    pub fn train_on_data(&mut self, data: &TrainingExample) {
+        self.set_inputs(&data.inputs);
         self.invalidate();
-        self.train_on_current_data(expected);
+        self.train_on_current_data(&data.expected);
     }
 
     pub fn clear_nudges(&mut self) {
@@ -147,6 +148,13 @@ impl Network {
                 n.clear_nudges();
             })
         });
+    }
+
+    pub fn train_on_batch(&mut self, batch: &Vec<TrainingExample>) {
+        batch.iter().for_each(|data| {
+            self.train_on_data(data)
+        });
+        self.apply_nudges();
     }
 }
 
