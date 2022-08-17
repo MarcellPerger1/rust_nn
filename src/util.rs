@@ -35,4 +35,3 @@ macro_rules! impl_as_any {
 }
 
 pub use impl_as_any;
-

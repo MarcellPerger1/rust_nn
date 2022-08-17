@@ -13,7 +13,7 @@ impl Default for NetworkConfig {
     fn default() -> Self {
         Self {
             learning_rate: 1.0,
-            shape: Vec::new()
+            shape: Vec::new(),
         }
     }
 }
@@ -28,13 +28,17 @@ pub struct Network {
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
         let shape = shape.clone();
-        return Self::with_config(&NetworkConfig {shape, ..Default::default()});
+        return Self::with_config(&NetworkConfig {
+            shape,
+            ..Default::default()
+        });
     }
-    
+
     pub fn with_config(config: &NetworkConfig) -> Network {
         let config = config.clone();
         assert!(config.shape.len() >= 2);
-        let layers = config.shape
+        let layers = config
+            .shape
             .iter()
             .enumerate()
             .map(|(i, n)| {
