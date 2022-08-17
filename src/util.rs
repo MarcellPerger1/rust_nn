@@ -18,7 +18,8 @@ pub trait TryIntoRefMut {
     fn try_into_ref_mut<T: 'static>(&mut self) -> Option<&mut T>;
 }
 
-// tod make a Derive() for this
+// todo make a Derive() for this or
+// auto traits when stabilized
 #[macro_export]
 macro_rules! impl_as_any {
     ($name:path) => {
@@ -34,3 +35,4 @@ macro_rules! impl_as_any {
 }
 
 pub use impl_as_any;
+
