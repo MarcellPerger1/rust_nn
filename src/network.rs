@@ -94,7 +94,7 @@ impl Network {
         self.get_start_node_mut(i).set_value(value)
     }
 
-    pub fn set_inputs(&mut self, inputs: Vec<f64>) {
+    pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
         self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
             n.try_into_ref_mut::<StartNode>()
                 .unwrap()
@@ -104,7 +104,7 @@ impl Network {
 }
 
 impl Network {
-    pub fn request_nudges_end(&self, expected: Vec<f64>) {
+    pub fn request_nudges_end(&self, expected: &Vec<f64>) {
         let outputs = self.get_outputs();
         self.layers[self.layers.len() - 1]
             .iter()
@@ -118,13 +118,19 @@ impl Network {
             });
     }
 
-    pub fn train_on_current_data(&self, expected: Vec<f64>) {
+    pub fn train_on_current_data(&self, expected: &Vec<f64>) {
         self.request_nudges_end(expected);
         self.layers.iter().skip(1).rev().for_each(|l| {
             l.iter().for_each(|n| {
                 n.try_into_ref::<Node>().unwrap().calc_nudge(self);
             })
         });
+    }
+
+    pub fn train_on_data(&mut self, inputs: &Vec<f64>, expected: &Vec<f64>) {
+        self.set_inputs(inputs);
+        self.invalidate();
+        self.train_on_current_data(expected);
     }
 }
 
