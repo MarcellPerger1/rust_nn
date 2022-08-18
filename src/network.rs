@@ -1,27 +1,52 @@
 use crate::node::{new_node, AnyNode, Node, StartNode};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
+use crate::training_data::{TrainingExample, TrainingData};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
+
+#[derive(Debug, Clone)]
+pub struct NetworkConfig {
+    pub learning_rate: f64,
+    pub shape: Vec<usize>,
+}
+impl Default for NetworkConfig {
+    fn default() -> Self {
+        Self {
+            learning_rate: 1.0,
+            shape: Vec::new(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Network {
-    pub shape: Vec<usize>,
     pub layers: NetworkLayersT,
+    pub config: NetworkConfig,
 }
 
 // main impl
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
         let shape = shape.clone();
-        assert!(shape.len() >= 2);
-        let layers = shape
+        return Self::with_config(&NetworkConfig {
+            shape,
+            ..Default::default()
+        });
+    }
+
+    pub fn with_config(config: &NetworkConfig) -> Network {
+        let config = config.clone();
+        assert!(config.shape.len() >= 2);
+        let layers = config
+            .shape
             .iter()
             .enumerate()
             .map(|(i, n)| {
                 (0..*n)
                     .map(|_| -> AnyNode {
                         if i != 0 {
-                            new_node(Node::new(0., &vec![0.; shape[i - 1]], i))
+                            new_node(Node::new(0., &vec![0.; config.shape[i - 1]], i))
                         } else {
                             new_node(StartNode::new(0.))
                         }
@@ -29,13 +54,12 @@ impl Network {
                     .collect::<LayerT>()
             })
             .collect();
-        let nw = Network { shape, layers };
-        return nw;
+        Network { config, layers }
     }
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
         assert_eq!(self.layers.len(), expected.len());
-        self.layers[self.shape.len() - 1]
+        self.layers[self.layers.len() - 1]
             .iter()
             .enumerate()
             .map(|(i, n)| error_f(expected[i], n.get_value(&self)))
@@ -43,26 +67,22 @@ impl Network {
     }
 
     pub fn invalidate(&self) {
-        let mut li = self.layers.iter();
-        li.next();
-        for l in li {
-            for n in l {
+        self.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
                 n.invalidate();
-            }
-        }
+            })
+        });
     }
 }
 
 // inputs/outputs
 impl Network {
     pub fn get_output(&self, i: usize) -> f64 {
-        self.layers.last().expect("Network must have layers!")[i].get_value(&self)
+        self.last_layer()[i].get_value(&self)
     }
 
     pub fn get_outputs(&self) -> Vec<f64> {
-        self.layers
-            .last()
-            .expect("Network must have layers!")
+        self.last_layer()
             .iter()
             .map(|n| n.get_value(&self))
             .collect()
@@ -72,7 +92,7 @@ impl Network {
         self.get_start_node_mut(i).set_value(value)
     }
 
-    pub fn set_inputs(&mut self, inputs: Vec<f64>) {
+    pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
         self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
             n.try_into_ref_mut::<StartNode>()
                 .unwrap()
@@ -82,9 +102,9 @@ impl Network {
 }
 
 impl Network {
-    pub fn request_nudges_end(&self, expected: Vec<f64>) {
+    pub fn request_nudges_end(&self, expected: &Vec<f64>) {
         let outputs = self.get_outputs();
-        self.layers[self.shape.len() - 1]
+        self.layers[self.layers.len() - 1]
             .iter()
             .enumerate()
             .for_each(|(i, n)| {
@@ -96,7 +116,7 @@ impl Network {
             });
     }
 
-    pub fn train_on_current_data(&self, expected: Vec<f64>) {
+    pub fn train_on_current_data(&self, expected: &Vec<f64>) {
         self.request_nudges_end(expected);
         self.layers.iter().skip(1).rev().for_each(|l| {
             l.iter().for_each(|n| {
@@ -104,7 +124,45 @@ impl Network {
             })
         });
     }
+
+    pub fn train_on_data(&mut self, data: &TrainingExample) {
+        self.set_inputs(&data.inputs);
+        self.invalidate();
+        self.train_on_current_data(&data.expected);
+    }
+
+    pub fn clear_nudges(&mut self) {
+        self.layers.iter_mut().skip(1).for_each(|l| {
+            l.iter_mut().for_each(|n| {
+                n.try_into_ref_mut::<Node>().unwrap().clear_nudges();
+            })
+        })
+    }
+
+    pub fn apply_nudges(&mut self) {
+        self.layers.iter_mut().skip(1).for_each(|l| {
+            l.iter_mut().for_each(|n| {
+                let n = n.try_into_ref_mut::<Node>().unwrap();
+                n.apply_nudges();
+                n.clear_nudges();
+            })
+        });
+    }
+
+    pub fn train_on_batch(&mut self, batch: &TrainingData) {
+        batch.0.iter().for_each(|data| {
+            self.train_on_data(data)
+        });
+        self.apply_nudges();
+    }
+
+    pub fn train_on_batches(&mut self, batches: &Vec<TrainingData>) {
+        batches.iter().for_each(|b| {
+            self.train_on_batch(b);
+        });
+    }
 }
+
 
 // indexing stuff
 impl Network {
@@ -147,5 +205,15 @@ impl Network {
     }
     pub fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
         self.get_node_mut(li, ni).try_into_ref_mut()
+    }
+
+    #[inline]
+    pub fn n_layers(&self) -> usize {
+        self.layers.len()
+    }
+
+    #[inline]
+    pub fn last_layer(&self) -> &LayerT {
+        self.layers.last().expect("Network must have layers!!!")
     }
 }

@@ -37,9 +37,10 @@ pub struct Node {
     pub layer: usize,
     pub(crate) sum_cache: RefCell<Option<f64>>,
     pub(crate) result_cache: RefCell<Option<f64>>,
+    // backpropagation
     pub bias_nudge_sum: RefCell<f64>,
     pub inp_w_nudge_sum: RefCell<Vec<f64>>,
-    pub nudge_cnt: RefCell<i32>,
+    pub nudge_cnt: RefCell<usize>,
     pub requested_nudge: RefCell<f64>,
 }
 impl_as_any!(Node);
@@ -51,6 +52,7 @@ impl Node {
             layer,
             result_cache: RefCell::new(None),
             sum_cache: RefCell::new(None),
+            // backpropagation
             bias_nudge_sum: RefCell::new(0.0),
             inp_w_nudge_sum: RefCell::new(vec![0.0; inp_w.len()]),
             nudge_cnt: RefCell::new(0),
@@ -63,7 +65,7 @@ impl Node {
     }
 
     pub fn is_last_layer(&self, network: &Network) -> bool {
-        self.layer == network.shape.len() - 1
+        self.layer == network.n_layers() - 1
     }
 
     pub fn get_weight(&self, wi: usize) -> f64 {
@@ -74,9 +76,8 @@ impl Node {
     }
 
     pub fn calc_nudge(&self, network: &Network) {
-        let lr = 1.0; // learning rate; hard-coded for now
         let d_sig = self.get_sum(network);
-        let base_nudge = *self.requested_nudge.borrow() * d_sig * lr;
+        let base_nudge = *self.requested_nudge.borrow() * d_sig * network.config.learning_rate;
         // bias nudge
         *self.bias_nudge_sum.borrow_mut() += base_nudge;
         (0..self.inp_w.len()).for_each(|i| {
@@ -93,6 +94,21 @@ impl Node {
 
     pub fn request_nudge(&self, nudge: f64) {
         *self.requested_nudge.borrow_mut() += nudge;
+    }
+
+    pub fn apply_nudges(&mut self) {
+        let inv_cnt = 1.0 / (*self.nudge_cnt.borrow() as f64);
+        self.bias += *self.bias_nudge_sum.borrow() * inv_cnt;
+        self.inp_w_nudge_sum.borrow().iter().enumerate().for_each(|(i, wn)| {
+            self.inp_w[i] += wn * inv_cnt;
+        });
+    }
+
+    pub fn clear_nudges(&mut self) {
+        self.nudge_cnt.replace(0);
+        self.bias_nudge_sum.replace(0.0);
+        self.inp_w_nudge_sum.replace(vec![0.0; self.inp_w.len()]);
+        self.requested_nudge.replace(0.0);
     }
 
     pub fn get_sum(&self, network: &Network) -> f64 {
