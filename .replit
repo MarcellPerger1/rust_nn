@@ -1,4 +1,5 @@
-run = ["cargo", "run"]
+# run = ["cargo", "run"]
+run = "cargo run && cargo test"
 
 entrypoint = "src/main.rs"
 
