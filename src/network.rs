@@ -1,6 +1,6 @@
 use crate::node::{new_node, AnyNode, Node, StartNode};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
-use crate::training_data::TrainingExample;
+use crate::training_data::{TrainingExample, TrainingData};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
@@ -54,8 +54,7 @@ impl Network {
                     .collect::<LayerT>()
             })
             .collect();
-        let nw = Network { config, layers };
-        return nw;
+        Network { config, layers }
     }
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
@@ -150,11 +149,17 @@ impl Network {
         });
     }
 
-    pub fn train_on_batch(&mut self, batch: &Vec<TrainingExample>) {
-        batch.iter().for_each(|data| {
+    pub fn train_on_batch(&mut self, batch: &TrainingData) {
+        batch.0.iter().for_each(|data| {
             self.train_on_data(data)
         });
         self.apply_nudges();
+    }
+
+    pub fn train_on_batches(&mut self, batches: &Vec<TrainingData>) {
+        batches.iter().for_each(|b| {
+            self.train_on_batch(b);
+        });
     }
 }
 

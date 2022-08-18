@@ -11,7 +11,7 @@ impl TrainingExample {
 }
 
 #[derive(Debug, Clone)]
-pub struct TrainingData (Vec<TrainingExample>);
+pub struct TrainingData (pub Vec<TrainingExample>);
 
 impl TrainingData {
     pub fn chunks(&self, size: usize) -> Vec<TrainingData>{
