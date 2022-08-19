@@ -37,10 +37,16 @@ mod tests {
         }).collect())
     }
     #[test]
-    fn test_iter_chunks() {
+    fn iter_chunks() {
         let data = get_tr_data(24);
         let chunks_iter = data.iter_chunks(10);
         let chunks: Vec<_> = chunks_iter.collect();
+        assert_eq!(chunks, vec![TrainingData(data.0[0..10].to_vec()), TrainingData(data.0[10..20].to_vec()), TrainingData(data.0[20..].to_vec())]);
+    }
+    #[test]
+    fn get_chunks() {
+        let data = get_tr_data(24);
+        let chunks = data.chunks(10);
         assert_eq!(chunks, vec![TrainingData(data.0[0..10].to_vec()), TrainingData(data.0[10..20].to_vec()), TrainingData(data.0[20..].to_vec())]);
     }
 }
