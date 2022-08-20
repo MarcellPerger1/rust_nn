@@ -5,7 +5,7 @@ use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NetworkConfig {
     pub learning_rate: f64,
     pub shape: Vec<usize>,
@@ -281,16 +281,18 @@ mod tests {
     fn config_built_correctly() {
         let shape = vec![5, 3, 2];
         let nw = Network::new(&shape);
-        assert_eq!(nw.config.shape, shape);
-        assert_eq!(nw.config.learning_rate, NetworkConfig::default().learning_rate);
+        assert_eq!(nw.config, NetworkConfig {
+            shape: vec![5, 3, 2],
+            ..Default::default()
+        });
     }
     #[test]
     fn config_arg_respected() {
-        let nw = Network::with_config(&NetworkConfig {
+        let config = NetworkConfig {
             learning_rate: 3.5,
             shape: vec![10, 6, 3]
-        });
-        assert_eq!(nw.config.learning_rate, 3.5);
-        assert_eq!(nw.config.shape, vec![10, 6, 3]);
+        };
+        let nw = Network::with_config(&config);
+        assert_eq!(nw.config, config);    
     }
 }
