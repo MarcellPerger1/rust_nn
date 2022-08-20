@@ -63,10 +63,6 @@ impl Node {
             requested_nudge: RefCell::new(0.0),
         };
     }
-    pub fn invalidate(&self) {
-        self.sum_cache.replace(None);
-        self.result_cache.replace(None);
-    }
 
     pub fn is_last_layer(&self, network: &Network) -> bool {
         self.layer == network.n_layers() - 1
@@ -146,6 +142,11 @@ impl NodeLike for Node {
         let val = inp_sum.sigmoid();
         self.result_cache.replace(Some(val));
         return val;
+    }
+
+    fn invalidate(&self) {
+        self.sum_cache.replace(None);
+        self.result_cache.replace(None);
     }
 }
 

@@ -61,7 +61,11 @@ impl Network {
     }
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
-        assert_eq!(self.last_layer().len(), expected.len(), "Length of expected must match length of output");
+        assert_eq!(
+            self.last_layer().len(),
+            expected.len(),
+            "Length of expected must match length of output"
+        );
         self.layers[self.layers.len() - 1]
             .iter()
             .enumerate()
@@ -281,19 +285,22 @@ mod tests {
     fn config_built_correctly() {
         let shape = vec![5, 3, 2];
         let nw = Network::new(&shape);
-        assert_eq!(nw.config, NetworkConfig {
-            shape: vec![5, 3, 2],
-            ..Default::default()
-        });
+        assert_eq!(
+            nw.config,
+            NetworkConfig {
+                shape: vec![5, 3, 2],
+                ..Default::default()
+            }
+        );
     }
     #[test]
     fn config_arg_respected() {
         let config = NetworkConfig {
             learning_rate: 3.5,
-            shape: vec![10, 6, 3]
+            shape: vec![10, 6, 3],
         };
         let nw = Network::with_config(&config);
-        assert_eq!(nw.config, config);    
+        assert_eq!(nw.config, config);
     }
     fn new_nw() -> Network {
         Network::new(&vec![5, 3, 2])
@@ -314,5 +321,26 @@ mod tests {
         let mut nw = Network::new(&vec![7, 5, 5, 2]);
         nw.set_inputs(&vec![0.0; 7]);
         assert_f_eq!(nw.get_current_cost(&vec![0.9, 0.31]), 0.1961);
+    }
+    #[test]
+    fn test_invaildate() {
+        let nw = new_nw();
+        // set caches
+        nw.get_outputs();
+        nw.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                let n: &Node = n.try_into_ref().unwrap();
+                assert!(n.sum_cache.borrow().is_some());
+                assert!(n.result_cache.borrow().is_some());
+            })
+        });
+        nw.invalidate();
+        nw.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                let n: &Node = n.try_into_ref().unwrap();
+                assert!(n.sum_cache.borrow().is_none());
+                assert!(n.result_cache.borrow().is_none());
+            })
+        });
     }
 }

@@ -1,9 +1,9 @@
 pub mod network;
 pub mod node;
 pub mod sigmoid;
-pub mod training_data;
 #[cfg(test)]
 mod test_util;
+pub mod training_data;
 mod util;
 
 use crate::network::Network;
