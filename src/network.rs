@@ -343,4 +343,17 @@ mod tests {
             })
         });
     }
+    #[test]
+    fn test_set_input() {
+        let mut nw = new_nw();
+        nw.set_input(3, 0.7);
+        assert_eq!(nw.layers[0][3].get_value(&nw), 0.7);
+    }
+    #[test]
+    #[should_panic(expected = "6")]
+    fn set_input_oob() { // (out of bounds)
+        let mut nw = new_nw();
+        nw.set_input(6, 0.7);
+    }
+    // TODO use mockall crate for mocking???
 }
