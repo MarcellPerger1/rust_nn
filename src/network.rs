@@ -61,7 +61,7 @@ impl Network {
     }
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
-        assert_eq!(self.layers.len(), expected.len());
+        assert_eq!(self.last_layer().len(), expected.len(), "Length of expected must match length of output");
         self.layers[self.layers.len() - 1]
             .iter()
             .enumerate()
@@ -221,7 +221,7 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use crate::test_util::*;
+    use crate::test_util::*;
 
     #[test]
     fn init_by_shape() {
@@ -294,5 +294,25 @@ mod tests {
         };
         let nw = Network::with_config(&config);
         assert_eq!(nw.config, config);    
+    }
+    fn new_nw() -> Network {
+        Network::new(&vec![5, 3, 2])
+    }
+    #[test]
+    #[should_panic(expected = "Length of expected must match length of output")]
+    fn current_cost_bad_expected_fails() {
+        new_nw().get_current_cost(&vec![0.1; 5]);
+    }
+    #[test]
+    fn current_cost_zero() {
+        let mut nw = new_nw();
+        nw.set_inputs(&vec![0.0; 5]);
+        assert_eq!(nw.get_current_cost(&vec![0.5; 2]), 0.0);
+    }
+    #[test]
+    fn current_cost_normal() {
+        let mut nw = Network::new(&vec![7, 5, 5, 2]);
+        nw.set_inputs(&vec![0.0; 7]);
+        assert_f_eq!(nw.get_current_cost(&vec![0.9, 0.31]), 0.1961);
     }
 }
