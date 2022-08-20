@@ -277,4 +277,20 @@ mod tests {
             })
         })
     }
+    #[test]
+    fn config_built_correctly() {
+        let shape = vec![5, 3, 2];
+        let nw = Network::new(&shape);
+        assert_eq!(nw.config.shape, shape);
+        assert_eq!(nw.config.learning_rate, NetworkConfig::default().learning_rate);
+    }
+    #[test]
+    fn config_arg_respected() {
+        let nw = Network::with_config(&NetworkConfig {
+            learning_rate: 3.5,
+            shape: vec![10, 6, 3]
+        });
+        assert_eq!(nw.config.learning_rate, 3.5);
+        assert_eq!(nw.config.shape, vec![10, 6, 3]);
+    }
 }
