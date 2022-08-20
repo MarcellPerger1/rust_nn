@@ -2,9 +2,9 @@ pub mod network;
 pub mod node;
 pub mod sigmoid;
 pub mod training_data;
-mod util;
 #[cfg(test)]
 mod test_util;
+mod util;
 
 use crate::network::Network;
 use crate::node::NodeLike;

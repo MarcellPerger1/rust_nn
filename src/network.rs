@@ -1,6 +1,6 @@
 use crate::node::{new_node, AnyNode, Node, StartNode};
+use crate::training_data::{TrainingData, TrainingExample};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
-use crate::training_data::{TrainingExample, TrainingData};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
@@ -37,7 +37,10 @@ impl Network {
 
     pub fn with_config(config: &NetworkConfig) -> Network {
         let config = config.clone();
-        assert!(config.shape.len() >= 2, "network must have at least start and end layers!");
+        assert!(
+            config.shape.len() >= 2,
+            "network must have at least start and end layers!"
+        );
         let layers = config
             .shape
             .iter()
@@ -150,9 +153,7 @@ impl Network {
     }
 
     pub fn train_on_batch(&mut self, batch: &TrainingData) {
-        batch.0.iter().for_each(|data| {
-            self.train_on_data(data)
-        });
+        batch.0.iter().for_each(|data| self.train_on_data(data));
         self.apply_nudges();
     }
 
@@ -162,7 +163,6 @@ impl Network {
         });
     }
 }
-
 
 // indexing stuff
 impl Network {
@@ -262,7 +262,8 @@ mod tests {
         let shape = vec![5, 3, 2];
         let nw = Network::new(&shape);
         nw.layers[0].iter().for_each(|n| {
-            n.try_into_ref::<StartNode>().expect("Start layer must only conatin start nodes");
+            n.try_into_ref::<StartNode>()
+                .expect("Start layer must only conatin start nodes");
         })
     }
     #[test]
@@ -271,7 +272,8 @@ mod tests {
         let nw = Network::new(&shape);
         nw.layers.iter().skip(1).for_each(|l| {
             l.iter().for_each(|n| {
-                n.try_into_ref::<Node>().expect("Main layer must only conatin main nodes");
+                n.try_into_ref::<Node>()
+                    .expect("Main layer must only conatin main nodes");
             })
         })
     }

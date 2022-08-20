@@ -6,7 +6,6 @@ use std::cell::RefCell;
 pub type AnyNode = Box<dyn NodeLike>;
 pub type AnyNodeLT<'a> = Box<dyn NodeLike + 'a>;
 
-
 pub trait NodeLike: AsAny + std::fmt::Debug {
     fn get_value(&self, network: &Network) -> f64;
 
@@ -28,7 +27,10 @@ impl TryIntoRefMut for dyn NodeLike {
     }
 }
 
-pub fn new_node<'a, T>(n: T) -> AnyNodeLT<'a> where T: NodeLike + 'a {
+pub fn new_node<'a, T>(n: T) -> AnyNodeLT<'a>
+where
+    T: NodeLike + 'a,
+{
     Box::new(n) as AnyNodeLT
 }
 
@@ -101,9 +103,13 @@ impl Node {
     pub fn apply_nudges(&mut self) {
         let inv_cnt = 1.0 / (*self.nudge_cnt.borrow() as f64);
         self.bias += *self.bias_nudge_sum.borrow() * inv_cnt;
-        self.inp_w_nudge_sum.borrow().iter().enumerate().for_each(|(i, wn)| {
-            self.inp_w[i] += wn * inv_cnt;
-        });
+        self.inp_w_nudge_sum
+            .borrow()
+            .iter()
+            .enumerate()
+            .for_each(|(i, wn)| {
+                self.inp_w[i] += wn * inv_cnt;
+            });
     }
 
     pub fn clear_nudges(&mut self) {
