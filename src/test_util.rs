@@ -20,8 +20,8 @@ macro_rules! assert_f_eq {
             let __a = $a;
             let __b = $b;
             // NaN != NaN workaround
-            let __b_nan = (__b as f64).is_nan();
-            let __a_nan = (__a as f64).is_nan();
+            let __a_nan = __a != __a;
+            let __b_nan = __b != __b;
             if __a_nan || __b_nan { __a_nan && __b_nan }
             else {
                 __a == __b || ((__a - __b).abs() / __b <= (__b.epsilon() * 4.0))
