@@ -37,7 +37,7 @@ impl Network {
 
     pub fn with_config(config: &NetworkConfig) -> Network {
         let config = config.clone();
-        assert!(config.shape.len() >= 2);
+        assert!(config.shape.len() >= 2, "network must have at least start and end layers!");
         let layers = config
             .shape
             .iter()
@@ -215,5 +215,26 @@ impl Network {
     #[inline]
     pub fn last_layer(&self) -> &LayerT {
         self.layers.last().expect("Network must have layers!!!")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // use crate::test_util::*;
+
+    #[test]
+    fn init_by_shape() {
+        let shape = vec![5, 3, 2];
+        let nw = Network::new(&shape);
+        assert_eq!(nw.layers.len(), shape.len());
+        nw.layers.iter().enumerate().for_each(|(i, l)| {
+            assert_eq!(l.len(), shape[i]);
+        })
+    }
+    #[test]
+    #[should_panic(expected = "network must have at least start and end layers")]
+    fn few_layers_fast_fail() {
+        Network::new(&vec![7]);
     }
 }
