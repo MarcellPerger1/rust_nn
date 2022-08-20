@@ -237,4 +237,24 @@ mod tests {
     fn few_layers_fast_fail() {
         Network::new(&vec![7]);
     }
+    #[test]
+    fn nodes_know_self_layer() {
+        let shape = vec![5, 3, 2];
+        let nw = Network::new(&shape);
+        nw.layers.iter().enumerate().skip(1).for_each(|(i, l)| {
+            l.iter().for_each(|n| {
+                assert_eq!(n.try_into_ref::<Node>().unwrap().layer, i);
+            })
+        })
+    }
+    #[test]
+    fn nodes_have_correct_inp_w_length() {
+        let shape = vec![5, 3, 2];
+        let nw = Network::new(&shape);
+        nw.layers.iter().enumerate().skip(1).for_each(|(i, l)| {
+            l.iter().for_each(|n| {
+                assert_eq!(n.try_into_ref::<Node>().unwrap().inp_w.len(), shape[i - 1]);
+            })
+        })
+    }
 }
