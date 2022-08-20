@@ -257,4 +257,22 @@ mod tests {
             })
         })
     }
+    #[test]
+    fn start_layer_has_start_nodes() {
+        let shape = vec![5, 3, 2];
+        let nw = Network::new(&shape);
+        nw.layers[0].iter().for_each(|n| {
+            n.try_into_ref::<StartNode>().expect("Start layer must only conatin start nodes");
+        })
+    }
+    #[test]
+    fn main_layers_have_main_nodes() {
+        let shape = vec![5, 3, 2];
+        let nw = Network::new(&shape);
+        nw.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                n.try_into_ref::<Node>().expect("Main layer must only conatin main nodes");
+            })
+        })
+    }
 }
