@@ -5,6 +5,7 @@ pub mod sigmoid;
 mod test_util;
 pub mod training_data;
 mod util;
+mod mock_network;
 
 use crate::network::Network;
 use crate::node::NodeLike;
@@ -26,6 +27,15 @@ macro_rules! assert_refcell_eq {
         assert_eq!(*$refcell.borrow(), $value)
     };
 }
+
+// pub struct X {
+//     data: Box<dyn std::any::Any>,
+// }
+// impl X {
+//     pub fn y<T: 'static>(&self) -> Option<&T> {
+//         self.data.downcast_ref()
+//     }
+// }
 
 fn run_checks() {
     // NOTE TO SELF: remember that activation is passed thru sigmoid activation
