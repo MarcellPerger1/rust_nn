@@ -19,11 +19,11 @@ impl Default for NetworkConfig {
     }
 }
 
-#[derive(Debug)]
-pub struct Network {
-    pub layers: NetworkLayersT,
-    pub config: NetworkConfig,
-}
+// #[derive(Debug)]
+// pub struct Network {
+//     pub layers: NetworkLayersT,
+//     pub config: NetworkConfig,
+// }
 
 pub trait NodeContainer {
     fn get_node(&self, li: usize, ni: usize) -> &AnyNode;
@@ -129,10 +129,8 @@ pub trait InOutLayeredNetwork: InOutNetwork + VecLayersNetwork {
     }
 }
 
-
-// main impl
-impl Network {
-    pub fn new(shape: &Vec<usize>) -> Network {
+pub trait NetworkTrait: Sized {
+    fn new(shape: &Vec<usize>) -> Self {
         let shape = shape.clone();
         return Self::with_config(&NetworkConfig {
             shape,
@@ -140,7 +138,9 @@ impl Network {
         });
     }
 
-    pub fn with_config(config: &NetworkConfig) -> Network {
+    fn from_attrs(config: NetworkConfig, layers: NetworkLayersT) -> Self;
+
+    fn with_config(config: &NetworkConfig) -> Self {
         let config = config.clone();
         assert!(
             config.shape.len() >= 2,
@@ -162,60 +162,212 @@ impl Network {
                     .collect::<LayerT>()
             })
             .collect();
-        Network { config, layers }
+        Self::from_attrs(config, layers)
     }
 
-    pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
+    fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
         assert_eq!(
             self.last_layer().len(),
             expected.len(),
             "Length of expected must match length of output"
         );
-        self.layers[self.layers.len() - 1]
+        self.layers_ref()[self.n_layers() - 1]
             .iter()
             .enumerate()
             .map(|(i, n)| error_f(expected[i], n.get_value(&self)))
             .sum()
     }
 
-    pub fn invalidate(&self) {
-        self.layers.iter().skip(1).for_each(|l| {
-            l.iter().for_each(|n| {
-                n.invalidate();
-            })
-        });
-    }
-}
-
-// inputs/outputs
-impl Network {
-    pub fn get_output(&self, i: usize) -> f64 {
-        self.last_layer()[i].get_value(&self)
+    fn get_output(&self, i: usize) -> f64 {
+        todo!();
+        // self.get_main_node(self.n_layers() - 1, i).get_value(&self)
     }
 
-    pub fn get_outputs(&self) -> Vec<f64> {
-        self.last_layer()
-            .iter()
-            .map(|n| n.get_value(&self))
-            .collect()
+    fn get_outputs(&self) -> Vec<f64> {
+        todo!();
+        // self.last_layer()
+        //     .iter()
+        //     .map(|n| n.get_value(&self))
+        //     .collect()
     }
 
-    pub fn set_input(&mut self, i: usize, value: f64) {
-        self.get_node_as_mut::<StartNode>(0, i).unwrap().set_value(value)
+    fn set_input(&mut self, i: usize, value: f64) {
+        self.get_start_node_mut(i).set_value(value)
     }
 
-    pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
+    fn set_inputs(&mut self, inputs: &Vec<f64>) {
         assert_eq!(
             inputs.len(), 
-            self.layers[0].len(), 
+            self.shape_vec()[0], 
             "number of inputs must match number of nodes in layer 0");
-        self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
+        self.layers_mut()[0].iter_mut().enumerate().for_each(|(i, n)| {
             n.try_into_ref_mut::<StartNode>()
                 .unwrap()
                 .set_value(inputs[i])
         });
     }
+
+    fn layers_ref(&self) -> &NetworkLayersT;
+    fn layers_mut(&mut self) -> &mut NetworkLayersT;
+
+    #[inline]
+    fn shape_vec(&self) -> Vec<usize> {
+        self.layers_ref().iter().map(|l| l.len()).collect()
+    }
+    #[inline]
+    fn n_layers(&self) -> usize {
+        self.layers_ref().len()
+    }
+    #[inline]
+    fn last_layer(&self) -> &LayerT {
+        self.layers_ref().last().expect("Network must have layers")
+    }
+
+    #[inline]
+    fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
+        &self.layers_ref()[li][ni]
+    }
+    #[inline]
+    fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode {
+        &mut self.layers_mut()[li][ni]
+    }
+
+    fn invalidate(&self) {
+        self.layers_ref().iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                n.invalidate();
+            })
+        });
+    }
+
+    fn get_node_as<T: 'static>(&self, li: usize, ni: usize) -> Option<&T>{
+        self.get_node(li, ni).try_into_ref()
+    }
+    fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
+        self.get_node_mut(li, ni).try_into_ref_mut()
+    }
+    fn get_start_node(&self, ni: usize) -> &StartNode {
+        self.get_node_as(0, ni).unwrap()
+    }
+    fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
+        self.get_node_as_mut(0, ni).unwrap()
+    }
+    fn get_main_node(&self, li: usize, ni: usize) -> &Node {
+        assert_ne!(li, 0, "no main nodes in layer 0");
+        self.get_node_as(li, ni).unwrap()
+    }
+    fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
+        assert_ne!(li, 0, "no main nodes in layer 0");
+        self.get_node_as_mut(li, ni).unwrap()
+    }
 }
+
+#[derive(Debug)]
+pub struct Network {
+    pub layers: NetworkLayersT,
+    pub config: NetworkConfig,
+}
+impl NetworkTrait for Network {
+    fn from_attrs(config: NetworkConfig, layers: NetworkLayersT) -> Self{
+        Network { layers, config }
+    }
+    fn layers_ref(&self) -> &NetworkLayersT {
+        &self.layers
+    }
+    fn layers_mut(&mut self) -> &mut NetworkLayersT {
+        &mut self.layers
+    }
+
+    
+}
+
+// // main impl
+// impl Network {
+//     pub fn new(shape: &Vec<usize>) -> Network {
+//         let shape = shape.clone();
+//         return Self::with_config(&NetworkConfig {
+//             shape,
+//             ..Default::default()
+//         });
+//     }
+
+//     pub fn with_config(config: &NetworkConfig) -> Network {
+//         let config = config.clone();
+//         assert!(
+//             config.shape.len() >= 2,
+//             "network must have at least start and end layers!"
+//         );
+//         let layers = config
+//             .shape
+//             .iter()
+//             .enumerate()
+//             .map(|(i, n)| {
+//                 (0..*n)
+//                     .map(|_| -> AnyNode {
+//                         if i != 0 {
+//                             new_node(Node::new(0., &vec![0.; config.shape[i - 1]], i))
+//                         } else {
+//                             new_node(StartNode::new(0.))
+//                         }
+//                     })
+//                     .collect::<LayerT>()
+//             })
+//             .collect();
+//         Network { config, layers }
+//     }
+
+//     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
+//         assert_eq!(
+//             self.last_layer().len(),
+//             expected.len(),
+//             "Length of expected must match length of output"
+//         );
+//         self.layers[self.layers.len() - 1]
+//             .iter()
+//             .enumerate()
+//             .map(|(i, n)| error_f(expected[i], n.get_value(&self)))
+//             .sum()
+//     }
+
+//     pub fn invalidate(&self) {
+//         self.layers.iter().skip(1).for_each(|l| {
+//             l.iter().for_each(|n| {
+//                 n.invalidate();
+//             })
+//         });
+//     }
+// }
+
+// // inputs/outputs
+// impl Network {
+//     pub fn get_output(&self, i: usize) -> f64 {
+//         self.last_layer()[i].get_value(&self)
+//     }
+
+//     pub fn get_outputs(&self) -> Vec<f64> {
+//         self.last_layer()
+//             .iter()
+//             .map(|n| n.get_value(&self))
+//             .collect()
+//     }
+
+//     pub fn set_input(&mut self, i: usize, value: f64) {
+//         self.get_node_as_mut::<StartNode>(0, i).unwrap().set_value(value)
+//     }
+
+//     pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
+//         assert_eq!(
+//             inputs.len(), 
+//             self.layers[0].len(), 
+//             "number of inputs must match number of nodes in layer 0");
+//         self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
+//             n.try_into_ref_mut::<StartNode>()
+//                 .unwrap()
+//                 .set_value(inputs[i])
+//         });
+//     }
+// }
+
 
 impl Network {
     pub fn request_nudges_end(&self, expected: &Vec<f64>) {
@@ -277,59 +429,59 @@ impl Network {
     }
 }
 
-// indexing stuff
-impl Network {
-    #[inline]
-    pub fn layers_ref(&self) -> &NetworkLayersT {
-        &self.layers
-    }
-    #[inline]
-    pub fn layers_mut(&mut self) -> &mut NetworkLayersT {
-        &mut self.layers
-    }
-    pub fn get_layer(&self, i: usize) -> &LayerT {
-        &self.layers[i]
-    }
+// // indexing stuff
+// impl Network {
+//     #[inline]
+//     pub fn layers_ref(&self) -> &NetworkLayersT {
+//         &self.layers
+//     }
+//     #[inline]
+//     pub fn layers_mut(&mut self) -> &mut NetworkLayersT {
+//         &mut self.layers
+//     }
+//     pub fn get_layer(&self, i: usize) -> &LayerT {
+//         &self.layers[i]
+//     }
 
-    pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
-        &self.layers[li][ni]
-    }
-    pub fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode {
-        &mut self.layers[li][ni]
-    }
+//     pub fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
+//         &self.layers[li][ni]
+//     }
+//     pub fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode {
+//         &mut self.layers[li][ni]
+//     }
 
-    pub fn get_start_node(&self, ni: usize) -> &StartNode {
-        self.get_node_as(0, ni).unwrap()
-    }
-    pub fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
-        self.get_node_as_mut(0, ni).unwrap()
-    }
-    pub fn get_main_node(&self, li: usize, ni: usize) -> &Node {
-        assert_ne!(li, 0, "no main nodes in layer 0");
-        self.get_node_as(li, ni).unwrap()
-    }
-    pub fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
-        assert_ne!(li, 0, "no main nodes in layer 0");
-        self.get_node_as_mut(li, ni).unwrap()
-    }
+//     pub fn get_start_node(&self, ni: usize) -> &StartNode {
+//         self.get_node_as(0, ni).unwrap()
+//     }
+//     pub fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
+//         self.get_node_as_mut(0, ni).unwrap()
+//     }
+//     pub fn get_main_node(&self, li: usize, ni: usize) -> &Node {
+//         assert_ne!(li, 0, "no main nodes in layer 0");
+//         self.get_node_as(li, ni).unwrap()
+//     }
+//     pub fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
+//         assert_ne!(li, 0, "no main nodes in layer 0");
+//         self.get_node_as_mut(li, ni).unwrap()
+//     }
 
-    pub fn get_node_as<T: 'static>(&self, li: usize, ni: usize) -> Option<&T> {
-        self.get_node(li, ni).try_into_ref()
-    }
-    pub fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
-        self.get_node_mut(li, ni).try_into_ref_mut()
-    }
+//     pub fn get_node_as<T: 'static>(&self, li: usize, ni: usize) -> Option<&T> {
+//         self.get_node(li, ni).try_into_ref()
+//     }
+//     pub fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
+//         self.get_node_mut(li, ni).try_into_ref_mut()
+//     }
 
-    #[inline]
-    pub fn n_layers(&self) -> usize {
-        self.layers.len()
-    }
+//     #[inline]
+//     pub fn n_layers(&self) -> usize {
+//         self.layers.len()
+//     }
 
-    #[inline]
-    pub fn last_layer(&self) -> &LayerT {
-        self.layers.last().expect("Network must have layers!!!")
-    }
-}
+//     #[inline]
+//     pub fn last_layer(&self) -> &LayerT {
+//         self.layers.last().expect("Network must have layers!!!")
+//     }
+// }
 use mockall::mock;
 mock! {
     pub Network {
