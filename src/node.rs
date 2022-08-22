@@ -1,4 +1,5 @@
 use crate::network::Network;
+
 use crate::sigmoid::Sigmoid;
 use crate::util::{impl_as_any, AsAny, TryIntoRef, TryIntoRefMut};
 use std::cell::RefCell;

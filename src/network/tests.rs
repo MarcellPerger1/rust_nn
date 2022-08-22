@@ -1,6 +1,5 @@
 use super::*;
 use crate::test_util::*;
-use crate::mock_network;
 
 #[test]
 fn init_by_shape() {

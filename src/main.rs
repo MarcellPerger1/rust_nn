@@ -5,7 +5,7 @@ pub mod sigmoid;
 mod test_util;
 pub mod training_data;
 mod util;
-mod mock_network;
+// mod mock_network;
 
 use crate::network::Network;
 use crate::node::NodeLike;

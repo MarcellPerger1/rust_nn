@@ -4,12 +4,11 @@ use crate::network::{NetworkConfig, NetworkLayersT, LayerT};
 //pub use crate::network::Network;
 use crate::training_data::*;
 use crate::node::*;
-use crate::mock_network::MockNetwork as Network;
 
 mock! {
     pub Network {
-        pub fn new(shape: &Vec<usize>) -> Network;
-        pub fn with_config(config: &NetworkConfig) -> Network;
+        pub fn new(shape: &Vec<usize>) -> MockNetwork;
+        pub fn with_config(config: &NetworkConfig) -> MockNetwork;
         pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64;
         pub fn invalidate(&self);
         pub fn get_output(&self, i: usize) -> f64;
@@ -39,3 +38,4 @@ mock! {
     }
 }
 
+pub use self::MockNetwork as PubMockNetwork;
