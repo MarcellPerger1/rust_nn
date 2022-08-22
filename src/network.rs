@@ -25,6 +25,18 @@ pub struct Network {
     pub config: NetworkConfig,
 }
 
+pub trait NodeContainer {
+    fn get_node(&self, li: usize, ni: usize) -> &AnyNode;
+    fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode;
+    fn get_node_as<T: 'static>(&self, li: usize, ni: usize) -> Option<&T>{
+        self.get_node(li, ni).try_into_ref()
+    }
+    fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
+        self.get_node_mut(li, ni).try_into_ref_mut()
+    }
+}
+
+
 // main impl
 impl Network {
     pub fn new(shape: &Vec<usize>) -> Network {
