@@ -1,4 +1,4 @@
-use crate::node::{new_node, AnyNode, Node, StartNode};
+use crate::node::{new_node, AnyNode, Node, StartNode, NodeLike};
 use crate::training_data::{TrainingData, TrainingExample};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
 
@@ -33,6 +33,77 @@ pub trait NodeContainer {
     }
     fn get_node_as_mut<T: 'static>(&mut self, li: usize, ni: usize) -> Option<&mut T> {
         self.get_node_mut(li, ni).try_into_ref_mut()
+    }
+}
+// impl-ing this trait for a type signals that in that type,
+// start nodes are in first layer and Nodes are in main layer
+pub trait LayeredNetwork: NodeContainer {
+    fn get_start_node(&self, ni: usize) -> &StartNode {
+        self.get_node_as(0, ni).unwrap()
+    }
+    fn get_start_node_mut(&mut self, ni: usize) -> &mut StartNode {
+        self.get_node_as_mut(0, ni).unwrap()
+    }
+    fn get_main_node(&self, li: usize, ni: usize) -> &Node {
+        assert_ne!(li, 0, "no main nodes in layer 0");
+        self.get_node_as(li, ni).unwrap()
+    }
+    fn get_main_node_mut(&mut self, li: usize, ni: usize) -> &mut Node {
+        assert_ne!(li, 0, "no main nodes in layer 0");
+        self.get_node_as_mut(li, ni).unwrap()
+    }
+}
+
+pub trait InOutNetwork {
+    fn get_output(&self, i: usize) -> f64;
+    fn get_outputs(&self) -> Vec<f64>;
+
+    fn set_input(&mut self, i: usize, value: f64);
+    fn set_inputs(&mut self, inputs: &Vec<f64>);
+}
+
+// the implementor can almost ceratinly provide better implementations of some of these methods
+pub trait InOutLayeredNetwork: InOutNetwork + LayeredNetwork {
+    fn layers_ref(&self) -> &NetworkLayersT;
+    fn layers_mut(&mut self) -> &mut NetworkLayersT;
+    
+    fn shape_vec(&self) -> Vec<usize> {
+        self.layers_ref().iter().map(|l| l.len()).collect()
+    }
+    fn n_layers(&self) -> usize {
+        self.layers_ref().len()
+    }
+    fn last_layer(&self) -> &LayerT {
+        self.layers_ref().last().expect("Network must have layers")
+    }
+
+    fn get_output(&self, i: usize) -> f64 {
+        0.0
+        // self.get_main_node(self.n_layers() - 1, i).get_value(&self)
+    }
+
+    fn get_outputs(&self) -> Vec<f64> {
+        vec![]
+        // self.last_layer()
+        //     .iter()
+        //     .map(|n| n.get_value(&self))
+        //     .collect()
+    }
+
+    fn set_input(&mut self, i: usize, value: f64) {
+        self.get_start_node_mut(i).set_value(value)
+    }
+
+    fn set_inputs(&mut self, inputs: &Vec<f64>) {
+        assert_eq!(
+            inputs.len(), 
+            self.shape_vec()[0], 
+            "number of inputs must match number of nodes in layer 0");
+        self.layers_mut()[0].iter_mut().enumerate().for_each(|(i, n)| {
+            n.try_into_ref_mut::<StartNode>()
+                .unwrap()
+                .set_value(inputs[i])
+        });
     }
 }
 
@@ -108,7 +179,7 @@ impl Network {
     }
 
     pub fn set_input(&mut self, i: usize, value: f64) {
-        self.get_start_node_mut(i).set_value(value)
+        self.get_node_as_mut::<StartNode>(0, i).unwrap().set_value(value)
     }
 
     pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
