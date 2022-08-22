@@ -54,6 +54,41 @@ pub trait LayeredNetwork: NodeContainer {
     }
 }
 
+pub trait VecLayersNetwork: LayeredNetwork {
+    fn layers_ref(&self) -> &NetworkLayersT;
+    fn layers_mut(&mut self) -> &mut NetworkLayersT;
+
+    #[inline]
+    fn shape_vec(&self) -> Vec<usize> {
+        self.layers_ref().iter().map(|l| l.len()).collect()
+    }
+    #[inline]
+    fn n_layers(&self) -> usize {
+        self.layers_ref().len()
+    }
+    #[inline]
+    fn last_layer(&self) -> &LayerT {
+        self.layers_ref().last().expect("Network must have layers")
+    }
+
+    #[inline]
+    fn get_node(&self, li: usize, ni: usize) -> &AnyNode {
+        &self.layers_ref()[li][ni]
+    }
+    #[inline]
+    fn get_node_mut(&mut self, li: usize, ni: usize) -> &mut AnyNode {
+        &mut self.layers_mut()[li][ni]
+    }
+
+    fn invalidate(&self) {
+        self.layers_ref().iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                n.invalidate();
+            })
+        });
+    }
+}
+
 pub trait InOutNetwork {
     fn get_output(&self, i: usize) -> f64;
     fn get_outputs(&self) -> Vec<f64>;
@@ -63,27 +98,14 @@ pub trait InOutNetwork {
 }
 
 // the implementor can almost ceratinly provide better implementations of some of these methods
-pub trait InOutLayeredNetwork: InOutNetwork + LayeredNetwork {
-    fn layers_ref(&self) -> &NetworkLayersT;
-    fn layers_mut(&mut self) -> &mut NetworkLayersT;
-    
-    fn shape_vec(&self) -> Vec<usize> {
-        self.layers_ref().iter().map(|l| l.len()).collect()
-    }
-    fn n_layers(&self) -> usize {
-        self.layers_ref().len()
-    }
-    fn last_layer(&self) -> &LayerT {
-        self.layers_ref().last().expect("Network must have layers")
-    }
-
+pub trait InOutLayeredNetwork: InOutNetwork + VecLayersNetwork {
     fn get_output(&self, i: usize) -> f64 {
-        0.0
+        todo!();
         // self.get_main_node(self.n_layers() - 1, i).get_value(&self)
     }
 
     fn get_outputs(&self) -> Vec<f64> {
-        vec![]
+        todo!();
         // self.last_layer()
         //     .iter()
         //     .map(|n| n.get_value(&self))
