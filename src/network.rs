@@ -359,7 +359,6 @@ mod tests {
         let mut nw = new_nw();
         nw.set_input(6, 0.7);
     }
-    // TODO use mockall crate for mocking???
     #[test]
     fn test_set_inputs() {
         let mut nw = new_nw();
@@ -382,5 +381,30 @@ mod tests {
         let mut nw = new_nw();
         let inps = vec![0.9; 4];
         nw.set_inputs(&inps);
+    }
+    #[test]
+    fn get_output_from_cache_forced() {
+        let nw = new_nw();
+        (0..*nw.config.shape.last().unwrap()).for_each(|i| {
+            nw.last_layer()[i]
+                .try_into_ref::<Node>()
+                .unwrap()
+                .result_cache
+                .replace(Some(-4.5));
+            assert_eq!(nw.get_output(i), -4.5);
+        });
+    }
+    #[test]
+    fn get_outputs_from_cache_forced() {
+        let nw = new_nw();
+        let out_cnt = *nw.config.shape.last().unwrap();
+        (0..out_cnt).for_each(|i| {
+            nw.last_layer()[i]
+                .try_into_ref::<Node>()
+                .unwrap()
+                .result_cache
+                .replace(Some(0.2));
+        });
+        assert_eq!(nw.get_outputs(), vec![0.2; out_cnt]);
     }
 }
