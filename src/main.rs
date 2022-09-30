@@ -7,7 +7,7 @@ pub mod training_data;
 mod util;
 // mod mock_network;
 
-use crate::network::Network;
+use crate::network::{Network, NetworkTrait};
 use crate::node::NodeLike;
 
 macro_rules! assert_cached_eq {

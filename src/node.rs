@@ -1,5 +1,5 @@
 use crate::network::Network;
-
+use crate::network::NetworkTrait;
 use crate::sigmoid::Sigmoid;
 use crate::util::{impl_as_any, AsAny, TryIntoRef, TryIntoRefMut};
 use std::cell::RefCell;
@@ -8,7 +8,7 @@ pub type AnyNode = Box<dyn NodeLike>;
 pub type AnyNodeLT<'a> = Box<dyn NodeLike + 'a>;
 
 pub trait NodeLike: AsAny + std::fmt::Debug {
-    fn get_value(&self, network: &Network) -> f64;
+    fn get_value(&self, network: &impl NetworkTrait) -> f64;
 
     fn invalidate(&self) {
         // do nothing by default
@@ -76,7 +76,7 @@ impl Node {
         self.inp_w[wi] = v;
     }
 
-    pub fn calc_nudge(&self, network: &Network) {
+    pub fn calc_nudge(&self, network: &impl NetworkTrait) {
         let d_sig = self.get_sum(network);
         let base_nudge = *self.requested_nudge.borrow() * d_sig * network.config.learning_rate;
         // bias nudge
@@ -116,7 +116,7 @@ impl Node {
         self.requested_nudge.replace(0.0);
     }
 
-    pub fn get_sum(&self, network: &Network) -> f64 {
+    pub fn get_sum(&self, network: &impl NetworkTrait) -> f64 {
         if let Some(cached) = *self.result_cache.borrow() {
             return cached;
         }
@@ -135,7 +135,7 @@ impl NodeLike for Node {
     // have to pass it in because circular data structures in Rust never end well
     // (that time i tried to implement a (doubly) linked list using only safe Rust,
     // it did not go well)
-    fn get_value(&self, network: &Network) -> f64 {
+    fn get_value(&self, network: &impl NetworkTrait) -> f64 {
         if let Some(cached) = *self.result_cache.borrow() {
             return cached;
         }
@@ -157,7 +157,7 @@ pub struct StartNode {
 }
 impl_as_any!(StartNode);
 impl NodeLike for StartNode {
-    fn get_value(&self, _: &Network) -> f64 {
+    fn get_value(&self, _: &impl NetworkTrait) -> f64 {
         self.value
     }
 }
