@@ -168,4 +168,49 @@ impl StartNode {
     pub fn set_value(&mut self, value: f64) {
         self.value = value;
     }
+
+    pub fn get_start_value(&self) -> f64 {
+        // same as `get_value` but doesn't require `Network` as argument
+        // the different naming is because rust can't differentiate properly
+        // between a 0-arg `get_value` defined on the struct and a 1-arg
+        // `get_value` defined on the `NodeLike` trait
+        self.value
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    mod start_node {
+        use super::*;
+        use crate::network::Network;
+        
+        #[test]
+        fn test_new() {
+            let n = StartNode::new(0.7);
+            assert_eq!(n.value, 0.7);
+        }
+
+        #[test]
+        fn set_value() {
+            let mut n = StartNode::new(3.3);
+            n.set_value(0.1);
+            assert_eq!(n.value, 0.1);
+        }
+
+        #[test]
+        fn get_value() {
+            // not very clean, but `get_value` needs a argument of type `Network`
+            let mut nw = Network::new(&vec![1, 1]);
+            nw.get_start_node_mut(0).value = -1.9;
+            assert_eq!(nw.get_node(0, 0).get_value(&nw), -1.9);
+        }
+
+        #[test]
+        fn get_value_start() {
+            let n = StartNode::new(8.7);
+            assert_eq!(n.get_start_value(), 8.7);
+        }
+    }
 }
