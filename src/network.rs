@@ -339,7 +339,7 @@ mod tests {
     }
     
     #[test]
-    fn test_invaildate() {
+    fn invaildate() {
         let nw = new_nw();
         // set caches
         nw.get_outputs();
@@ -359,41 +359,55 @@ mod tests {
             })
         });
     }
-    #[test]
-    fn test_set_input() {
-        let mut nw = new_nw();
-        nw.set_input(3, 0.7);
-        assert_eq!(nw.layers[0][3].get_value(&nw), 0.7);
+
+    mod set_input {
+        use super::*;
+        
+        #[test]
+        fn normal() {
+            let mut nw = new_nw();
+            nw.set_input(3, 0.7);
+            assert_eq!(nw.layers[0][3].get_value(&nw), 0.7);
+        }
+        
+        #[test]
+        #[should_panic(expected = "6")]
+        fn oob() { // (out of bounds)
+            let mut nw = new_nw();
+            nw.set_input(6, 0.7);
+        }
     }
-    #[test]
-    #[should_panic(expected = "6")]
-    fn set_input_oob() { // (out of bounds)
-        let mut nw = new_nw();
-        nw.set_input(6, 0.7);
+    
+    mod set_inputs {
+        use super::*;
+        
+        #[test]
+        fn normal() {
+            let mut nw = new_nw();
+            let inps = vec![0.2; 5];
+            nw.set_inputs(&inps);
+            nw.layers[0].iter().enumerate().for_each(|(i, n)| {
+                assert_eq!(n.get_value(&nw), inps[i]);
+            })
+        }
+        
+        #[test]
+        #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
+        fn too_long() {
+            let mut nw = new_nw();
+            let inps = vec![0.8; 6];
+            nw.set_inputs(&inps);
+        }
+        
+        #[test]
+        #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
+        fn too_short() {
+            let mut nw = new_nw();
+            let inps = vec![0.9; 4];
+            nw.set_inputs(&inps);
+        }
     }
-    #[test]
-    fn test_set_inputs() {
-        let mut nw = new_nw();
-        let inps = vec![0.2; 5];
-        nw.set_inputs(&inps);
-        nw.layers[0].iter().enumerate().for_each(|(i, n)| {
-            assert_eq!(n.get_value(&nw), inps[i]);
-        })
-    }
-    #[test]
-    #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
-    fn set_inputs_too_long() {
-        let mut nw = new_nw();
-        let inps = vec![0.8; 6];
-        nw.set_inputs(&inps);
-    }
-    #[test]
-    #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
-    fn set_inputs_too_short() {
-        let mut nw = new_nw();
-        let inps = vec![0.9; 4];
-        nw.set_inputs(&inps);
-    }
+    
     #[test]
     fn get_output_from_cache_forced() {
         let nw = new_nw();
@@ -406,6 +420,7 @@ mod tests {
             assert_eq!(nw.get_output(i), -4.5);
         });
     }
+    
     #[test]
     fn get_outputs_from_cache_forced() {
         let nw = new_nw();
