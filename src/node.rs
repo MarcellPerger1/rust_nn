@@ -265,32 +265,36 @@ mod tests {
             assert_eq!(n.is_last_layer(&nw), false);
         }
 
-        #[test]
-        fn get_weight() {
-            let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
-            assert_eq!(n.get_weight(0), 1.0);
-            assert_eq!(n.get_weight(2), 0.0);
-        }
+        mod inp_w {
+            use super::*;
+            
+            #[test]
+            fn get_weight() {
+                let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+                assert_eq!(n.get_weight(0), 1.0);
+                assert_eq!(n.get_weight(2), 0.0);
+            }
 
-        #[test]
-        #[should_panic]
-        fn get_weight_oob() {
-            let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
-            n.get_weight(3);
-        }
+            #[test]
+            #[should_panic]
+            fn get_weight_oob() {
+                let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+                n.get_weight(3);
+            }
 
-        #[test]
-        fn set_weight() {
-            let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
-            n.set_weight(2, 3.4);
-            assert_eq!(n.inp_w[2], 3.4);
-        }
+            #[test]
+            fn set_weight() {
+                let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+                n.set_weight(2, 3.4);
+                assert_eq!(n.inp_w[2], 3.4);
+            }
 
-        #[test]
-        #[should_panic]
-        fn set_weight_oob() {
-            let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
-            n.set_weight(3, 3.4);
+            #[test]
+            #[should_panic]
+            fn set_weight_oob() {
+                let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+                n.set_weight(3, 3.4);
+            }
         }
 
         #[test]
@@ -344,6 +348,48 @@ mod tests {
                 let n = nw.get_main_node(1, 2);
                 let value = n.get_sum(&nw);
                 assert_refcell_eq!(n.sum_cache, Some(value));
+            }
+        }
+
+        mod get_value {
+            use super::*;
+
+            #[test]
+            fn uses_cached() {
+                let nw = make_nw();
+                let n = nw.get_main_node(2, 1);
+                n.result_cache.replace(Some(0.9031));
+                assert_eq!(n.get_value(&nw), 0.9031);
+            }
+
+            #[test]
+            fn uses_cached_sum() {
+                let nw = make_nw();
+                let n = nw.get_main_node(2, 1);
+                n.sum_cache.replace(Some(5.67));
+                assert_eq!(n.get_value(&nw), (5.67).sigmoid());
+            }
+
+            #[test]
+            fn sets_cache() {
+                let nw = make_nw();
+                let n = nw.get_main_node(2, 1);
+                n.sum_cache.replace(Some(5.67));
+                let value = n.get_value(&nw);
+                assert_refcell_eq!(n.result_cache, Some(value));
+            }
+
+            #[test]
+            fn works_without_cache() {
+                let mut nw = make_nw();
+                nw.set_inputs(&vec![0.9, 0.0, 0.1]);
+                let mut n = nw.get_main_node_mut(1, 2);
+                n.bias = -3.5;
+                n.inp_w = vec![2.3, -1.2, 0.6];
+                n.invalidate();  // ensure nothing cached
+                let n = nw.get_main_node(1, 2);
+                let expected = (0.9*2.3-0.0*1.2+0.1*0.6-3.5).sigmoid();
+                assert_eq!(n.get_value(&nw), expected);
             }
         }
     }
