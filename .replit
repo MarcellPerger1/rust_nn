@@ -3,6 +3,8 @@ run = "cargo run && cargo test"
 
 entrypoint = "src/main.rs"
 
+hidden = ["target", ".git", ".config"]
+
 [packager]
 language = "rust"
 
