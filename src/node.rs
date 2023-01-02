@@ -287,5 +287,21 @@ mod tests {
             let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
             n.set_weight(3, 3.4);
         }
+
+        #[test]
+        fn invalidate_sum_cache() {
+            let n = Node::new(2.1, &vec![0.4, -7.4], 2);
+            n.sum_cache.replace(Some(-0.8));
+            n.invalidate();
+            assert_refcell_eq!(n.sum_cache, None);
+        }
+
+        #[test]
+        fn invalidate_result_cache() {
+            let n = Node::new(2.1, &vec![0.4, -7.4], 2);
+            n.result_cache.replace(Some(-0.8));
+            n.invalidate();
+            assert_refcell_eq!(n.result_cache, None);
+        }
     }
 }
