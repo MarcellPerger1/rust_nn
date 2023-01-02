@@ -40,6 +40,13 @@ macro_rules! assert_f_eq {
 }
 pub(crate) use assert_f_eq;
 
+macro_rules! assert_refcell_eq {
+    ($refcell: expr, $value: expr) => {
+        assert_eq!(*$refcell.borrow(), $value)
+    };
+}
+pub(crate) use assert_refcell_eq;
+
 macro_rules! for_f_types {
     ($name:ident, $test:block) => {
         #[allow(unused_imports)]
