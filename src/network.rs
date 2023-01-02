@@ -389,7 +389,7 @@ mod tests {
     }
     #[test]
     #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
-    fn set_inupts_too_short() {
+    fn set_inputs_too_short() {
         let mut nw = new_nw();
         let inps = vec![0.9; 4];
         nw.set_inputs(&inps);
