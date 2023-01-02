@@ -241,5 +241,23 @@ mod tests {
             assert_refcell_eq!(n.bias_nudge_sum, 0.0);
             assert_refcell_eq!(n.inp_w_nudge_sum, vec![0.0; 2]);
         }
+
+        #[test]
+        fn is_last_layer_in_network() {
+            let nw = Network::new(&vec![1, 2, 3]);
+            let n = nw.get_main_node(2, 1);
+            assert_eq!(n.is_last_layer(&nw), true);
+            let n = nw.get_main_node(1, 0);
+            assert_eq!(n.is_last_layer(&nw), false);
+        }
+
+        #[test]
+        fn is_last_layer_indep() {
+            let nw = Network::new(&vec![1, 2, 3]);
+            let n = Node::new(0.2, &vec![2.1, -0.3], 2);
+            assert_eq!(n.is_last_layer(&nw), true);
+            let n = Node::new(0.2, &vec![-9.8], 1);
+            assert_eq!(n.is_last_layer(&nw), false);
+        }
     }
 }
