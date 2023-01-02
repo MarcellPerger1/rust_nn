@@ -117,7 +117,7 @@ impl Node {
     }
 
     pub fn get_sum(&self, network: &Network) -> f64 {
-        if let Some(cached) = *self.result_cache.borrow() {
+        if let Some(cached) = *self.sum_cache.borrow() {
             return cached;
         }
         let inp_sum = self

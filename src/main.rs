@@ -29,6 +29,9 @@ mod main_tests {
     fn run_checks() {
         // NOTE TO SELF: remember that activation is passed thru sigmoid activation
         // DONT FORGET THIS when writing tests and wondering why they fail
+        // NOTE TO SELF 2: These tests aren't as important as all the unittests 
+        // as the numbers here aren't actually checked to be correct
+        // they are just the result from the previous version
         let mut nw = Network::new(&vec![2, 2]);
         // println!("{:#?}", nw);
         assert_cached_eq!(nw, 1, 1, None);
@@ -53,9 +56,9 @@ mod main_tests {
         assert_refcell_eq!(nw.get_main_node(1, 1).requested_nudge, -0.4621171572600098);
         assert_refcell_eq!(
             nw.get_main_node(1, 1).inp_w_nudge_sum,
-            vec![0.0, -0.3378347121470412]
+            vec![0.0, -0.4621171572600098]
         );
-        assert_refcell_eq!(nw.get_main_node(1, 1).bias_nudge_sum, -0.3378347121470412);
+        assert_refcell_eq!(nw.get_main_node(1, 1).bias_nudge_sum, -0.4621171572600098);
         assert_refcell_eq!(nw.get_main_node(1, 1).nudge_cnt, 1);
         nw.apply_nudges();
         assert_refcell_eq!(nw.get_main_node(1, 1).inp_w_nudge_sum, vec![0.0; 2]);
