@@ -111,6 +111,7 @@ impl Node {
     pub fn clear_nudges(&mut self) {
         self.nudge_cnt.replace(0);
         self.bias_nudge_sum.replace(0.0);
+        // or .borrow_mut().fill(0.0)
         self.inp_w_nudge_sum.replace(vec![0.0; self.inp_w.len()]);
         self.requested_nudge.replace(0.0);
     }
@@ -181,6 +182,7 @@ impl StartNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::assert_refcell_eq;
     
     mod start_node {
         use super::*;
@@ -211,6 +213,33 @@ mod tests {
         fn get_value_start() {
             let n = StartNode::new(8.7);
             assert_eq!(n.get_start_value(), 8.7);
+        }
+    }
+
+    mod main_node {
+        use super::*;
+        
+        #[test]
+        fn new_params() {
+            let n = Node::new(2.1, &vec![0.4, -7.4], 4);
+            assert_eq!(n.bias, 2.1);
+            assert_eq!(n.inp_w, vec![0.4, -7.4]);
+            assert_eq!(n.layer, 4);
+        }
+
+        #[test]
+        fn new_cache() {
+            let n = Node::new(2.1, &vec![0.4, -7.4], 4);
+            assert_refcell_eq!(n.result_cache, None);
+            assert_refcell_eq!(n.result_cache, None);
+        }
+
+        #[test]
+        fn new_nudges() {
+            let n = Node::new(2.1, &vec![0.4, -7.4], 4);
+            assert_refcell_eq!(n.nudge_cnt, 0);
+            assert_refcell_eq!(n.bias_nudge_sum, 0.0);
+            assert_refcell_eq!(n.inp_w_nudge_sum, vec![0.0; 2]);
         }
     }
 }
