@@ -259,5 +259,33 @@ mod tests {
             let n = Node::new(0.2, &vec![-9.8], 1);
             assert_eq!(n.is_last_layer(&nw), false);
         }
+
+        #[test]
+        fn get_weight() {
+            let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+            assert_eq!(n.get_weight(0), 1.0);
+            assert_eq!(n.get_weight(2), 0.0);
+        }
+
+        #[test]
+        #[should_panic]
+        fn get_weight_oob() {
+            let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+            n.get_weight(3);
+        }
+
+        #[test]
+        fn set_weight() {
+            let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+            n.set_weight(2, 3.4);
+            assert_eq!(n.inp_w[2], 3.4);
+        }
+
+        #[test]
+        #[should_panic]
+        fn set_weight_oob() {
+            let mut n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
+            n.set_weight(3, 3.4);
+        }
     }
 }
