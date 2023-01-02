@@ -319,6 +319,32 @@ mod tests {
                 n.sum_cache.replace(Some(-77.6));
                 assert_eq!(n.get_sum(&nw), -77.6);
             }
+
+            #[test]
+            fn sums_prev_layer_and_bias() {
+                let mut nw = make_nw();
+                nw.set_inputs(&vec![0.4, 0.8, 0.1]);
+                let mut n = nw.get_main_node_mut(1, 2);
+                n.bias = 0.5;
+                n.inp_w = vec![2.3, -1.2, 0.6];
+                n.sum_cache.replace(None);  // ensure not cached
+                let n = nw.get_main_node(1, 2);
+                let expected = 0.4*2.3-0.8*1.2+0.1*0.6+0.5;
+                assert_eq!(n.get_sum(&nw), expected);
+            }
+
+            #[test]
+            fn sets_cache() {
+                let mut nw = make_nw();
+                nw.set_inputs(&vec![0.4, 0.8, 0.1]);
+                let mut n = nw.get_main_node_mut(1, 2);
+                n.bias = 0.5;
+                n.inp_w = vec![2.3, -1.2, 0.6];
+                n.sum_cache.replace(None);  // ensure not cached
+                let n = nw.get_main_node(1, 2);
+                let value = n.get_sum(&nw);
+                assert_refcell_eq!(n.sum_cache, Some(value));
+            }
         }
     }
 }
