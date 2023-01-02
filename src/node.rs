@@ -218,6 +218,11 @@ mod tests {
 
     mod main_node {
         use super::*;
+
+        /// Makes network with shape `[3, 5, 4, 2]`
+        fn make_nw() -> Network {
+            return Network::new(&vec![3, 5, 4, 2]);
+        }
         
         #[test]
         fn new_params() {
@@ -302,6 +307,18 @@ mod tests {
             n.result_cache.replace(Some(-0.8));
             n.invalidate();
             assert_refcell_eq!(n.result_cache, None);
+        }
+
+        mod get_sum {
+            use super::*;
+
+            #[test]
+            fn uses_cached() {
+                let nw = make_nw();
+                let n = nw.get_main_node(2, 1);
+                n.sum_cache.replace(Some(-77.6));
+                assert_eq!(n.get_sum(&nw), -77.6);
+            }
         }
     }
 }
