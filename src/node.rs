@@ -183,11 +183,11 @@ impl StartNode {
 mod tests {
     use super::*;
     use crate::test_util::assert_refcell_eq;
-    
+
     mod start_node {
         use super::*;
         use crate::network::Network;
-        
+
         #[test]
         fn test_new() {
             let n = StartNode::new(0.7);
@@ -223,7 +223,7 @@ mod tests {
         fn make_nw() -> Network {
             return Network::new(&vec![3, 5, 4, 2]);
         }
-        
+
         #[test]
         fn new_params() {
             let n = Node::new(2.1, &vec![0.4, -7.4], 4);
@@ -267,7 +267,7 @@ mod tests {
 
         mod inp_w {
             use super::*;
-            
+
             #[test]
             fn get_weight() {
                 let n = Node::new(0.0, &vec![1.0, -0.2, 0.0], 1);
@@ -331,9 +331,9 @@ mod tests {
                 let mut n = nw.get_main_node_mut(1, 2);
                 n.bias = 0.5;
                 n.inp_w = vec![2.3, -1.2, 0.6];
-                n.sum_cache.replace(None);  // ensure not cached
+                n.sum_cache.replace(None); // ensure not cached
                 let n = nw.get_main_node(1, 2);
-                let expected = 0.4*2.3-0.8*1.2+0.1*0.6+0.5;
+                let expected = 0.4 * 2.3 - 0.8 * 1.2 + 0.1 * 0.6 + 0.5;
                 assert_eq!(n.get_sum(&nw), expected);
             }
 
@@ -344,7 +344,7 @@ mod tests {
                 let mut n = nw.get_main_node_mut(1, 2);
                 n.bias = 0.5;
                 n.inp_w = vec![2.3, -1.2, 0.6];
-                n.sum_cache.replace(None);  // ensure not cached
+                n.sum_cache.replace(None); // ensure not cached
                 let n = nw.get_main_node(1, 2);
                 let value = n.get_sum(&nw);
                 assert_refcell_eq!(n.sum_cache, Some(value));
@@ -386,9 +386,9 @@ mod tests {
                 let mut n = nw.get_main_node_mut(1, 2);
                 n.bias = -3.5;
                 n.inp_w = vec![2.3, -1.2, 0.6];
-                n.invalidate();  // ensure nothing cached
+                n.invalidate(); // ensure nothing cached
                 let n = nw.get_main_node(1, 2);
-                let expected = (0.9*2.3-0.0*1.2+0.1*0.6-3.5).sigmoid();
+                let expected = (0.9 * 2.3 - 0.0 * 1.2 + 0.1 * 0.6 - 3.5).sigmoid();
                 assert_eq!(n.get_value(&nw), expected);
             }
         }

@@ -12,7 +12,7 @@ mod main_tests {
     use crate::network::Network;
     use crate::node::NodeLike;
     use crate::test_util::assert_refcell_eq;
-    
+
     macro_rules! assert_cached_eq {
         ($network:expr, $ni:expr, $li:expr, $val:expr) => {
             assert_eq!(
@@ -29,7 +29,7 @@ mod main_tests {
     fn run_checks() {
         // NOTE TO SELF: remember that activation is passed thru sigmoid activation
         // DONT FORGET THIS when writing tests and wondering why they fail
-        // NOTE TO SELF 2: These tests aren't as important as all the unittests 
+        // NOTE TO SELF 2: These tests aren't as important as all the unittests
         // as the numbers here aren't actually checked to be correct
         // they are just the result from the previous version
         let mut nw = Network::new(&vec![2, 2]);
@@ -72,8 +72,6 @@ mod main_tests {
         println!("{:#?}", nw);
     }
 }
-
-
 
 fn main() {
     println!("Hello world!");

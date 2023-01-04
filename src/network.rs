@@ -101,9 +101,10 @@ impl Network {
 
     pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
         assert_eq!(
-            inputs.len(), 
-            self.layers[0].len(), 
-            "number of inputs must match number of nodes in layer 0");
+            inputs.len(),
+            self.layers[0].len(),
+            "number of inputs must match number of nodes in layer 0"
+        );
         self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
             n.try_into_ref_mut::<StartNode>()
                 .unwrap()
@@ -238,7 +239,7 @@ mod tests {
 
     mod test_new {
         use super::*;
-        
+
         #[test]
         fn init_by_shape() {
             let shape = vec![5, 3, 2];
@@ -315,10 +316,10 @@ mod tests {
             assert_eq!(nw.config, config);
         }
     }
-    
+
     mod current_cost {
         use super::*;
-        
+
         #[test]
         #[should_panic(expected = "Length of expected must match length of output")]
         fn bad_length_fails() {
@@ -337,7 +338,7 @@ mod tests {
             assert_f_eq!(nw.get_current_cost(&vec![0.9, 0.31]), 0.1961);
         }
     }
-    
+
     #[test]
     fn invaildate() {
         let nw = new_nw();
@@ -362,25 +363,25 @@ mod tests {
 
     mod set_input {
         use super::*;
-        
+
         #[test]
         fn normal() {
             let mut nw = new_nw();
             nw.set_input(3, 0.7);
             assert_eq!(nw.layers[0][3].get_value(&nw), 0.7);
         }
-        
+
         #[test]
         #[should_panic(expected = "6")]
-        fn oob() { // (out of bounds)
+        fn oob() {
             let mut nw = new_nw();
             nw.set_input(6, 0.7);
         }
     }
-    
+
     mod set_inputs {
         use super::*;
-        
+
         #[test]
         fn normal() {
             let mut nw = new_nw();
@@ -390,7 +391,7 @@ mod tests {
                 assert_eq!(n.get_value(&nw), inps[i]);
             })
         }
-        
+
         #[test]
         #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
         fn too_long() {
@@ -398,7 +399,7 @@ mod tests {
             let inps = vec![0.8; 6];
             nw.set_inputs(&inps);
         }
-        
+
         #[test]
         #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
         fn too_short() {
@@ -407,7 +408,7 @@ mod tests {
             nw.set_inputs(&inps);
         }
     }
-    
+
     #[test]
     fn get_output_from_cache_forced() {
         let nw = new_nw();
@@ -420,7 +421,7 @@ mod tests {
             assert_eq!(nw.get_output(i), -4.5);
         });
     }
-    
+
     #[test]
     fn get_outputs_from_cache_forced() {
         let nw = new_nw();
@@ -438,7 +439,7 @@ mod tests {
     #[test]
     fn get_outputs_full() {
         use crate::sigmoid::Sigmoid;
-        
+
         let mut nw = Network::new(&vec![3, 2]);
         let inputs = vec![0.9, 0.2, 0.45];
         nw.set_inputs(&inputs);
@@ -449,11 +450,15 @@ mod tests {
             nw.get_main_node_mut(1, ni).bias = biases[ni];
         }
         let actual = nw.get_outputs();
-        let outputs: Vec<_> = (0..2).map(|mni| {
-            (biases[mni] + (0..3).map(|sni| {
-                inputs[sni] * weights[mni][sni]
-            }).sum::<f64>()).sigmoid()
-        }).collect();
+        let outputs: Vec<_> = (0..2)
+            .map(|mni| {
+                ((0..3)
+                    .map(|sni| inputs[sni] * weights[mni][sni])
+                    .sum::<f64>()
+                    + biases[mni])
+                    .sigmoid()
+            })
+            .collect();
         println!("{:#?}", nw);
         assert_eq!(actual, outputs);
     }
