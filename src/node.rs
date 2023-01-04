@@ -392,5 +392,14 @@ mod tests {
                 assert_eq!(n.get_value(&nw), expected);
             }
         }
+
+        #[test]
+        fn request_nudge() {
+            let n = Node::new(0.2, &vec![2.1, -0.3], 1);
+            n.request_nudge(3.1);
+            assert_refcell_eq!(n.requested_nudge, 3.1);
+            n.request_nudge(-0.8);
+            assert_refcell_eq!(n.requested_nudge, 3.1 - 0.8);
+        }
     }
 }
