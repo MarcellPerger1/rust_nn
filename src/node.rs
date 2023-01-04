@@ -108,7 +108,7 @@ impl Node {
             });
     }
 
-    pub fn clear_nudges(&mut self) {
+    pub fn clear_nudges(&self) {
         self.nudge_cnt.replace(0);
         self.bias_nudge_sum.replace(0.0);
         // or .borrow_mut().fill(0.0)
@@ -400,6 +400,20 @@ mod tests {
             assert_refcell_eq!(n.requested_nudge, 3.1);
             n.request_nudge(-0.8);
             assert_refcell_eq!(n.requested_nudge, 3.1 - 0.8);
+        }
+
+        #[test]
+        fn clear_nudges() {
+            let n = Node::new(1.2, &vec![2.2, -0.33], 2);
+            n.bias_nudge_sum.replace(7.998);
+            n.inp_w_nudge_sum.replace(vec![3.1, -2.8]);
+            n.requested_nudge.replace(-3.02);
+            n.nudge_cnt.replace(6);
+            n.clear_nudges();
+            assert_refcell_eq!(n.nudge_cnt, 0);
+            assert_refcell_eq!(n.bias_nudge_sum, 0.0);
+            assert_refcell_eq!(n.inp_w_nudge_sum, vec![0.0; 2]);
+            assert_refcell_eq!(n.requested_nudge, 0.0);
         }
     }
 }
