@@ -434,4 +434,27 @@ mod tests {
         });
         assert_eq!(nw.get_outputs(), vec![0.2; out_cnt]);
     }
+
+    #[test]
+    fn get_outputs_full() {
+        use crate::sigmoid::Sigmoid;
+        
+        let mut nw = Network::new(&vec![3, 2]);
+        let inputs = vec![0.9, 0.2, 0.45];
+        nw.set_inputs(&inputs);
+        let weights = vec![vec![-2.3, 0.7, 0.0], vec![0.3, -1.92, -0.14]];
+        let biases = vec![1.1, -0.3];
+        for (ni, v) in weights.iter().enumerate() {
+            nw.get_main_node_mut(1, ni).inp_w.clone_from(v);
+            nw.get_main_node_mut(1, ni).bias = biases[ni];
+        }
+        let actual = nw.get_outputs();
+        let outputs: Vec<_> = (0..2).map(|mni| {
+            (biases[mni] + (0..3).map(|sni| {
+                inputs[sni] * weights[mni][sni]
+            }).sum::<f64>()).sigmoid()
+        }).collect();
+        println!("{:#?}", nw);
+        assert_eq!(actual, outputs);
+    }
 }
