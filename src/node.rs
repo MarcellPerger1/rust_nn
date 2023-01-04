@@ -76,7 +76,7 @@ impl Node {
     }
 
     pub fn calc_nudge(&self, network: &Network) {
-        let d_sig = self.get_sum(network);
+        let d_sig = self.get_sum(network).sig_deriv();
         let base_nudge = *self.requested_nudge.borrow() * d_sig * network.config.learning_rate;
         // bias nudge
         *self.bias_nudge_sum.borrow_mut() += base_nudge;
