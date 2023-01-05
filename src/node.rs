@@ -415,5 +415,20 @@ mod tests {
             assert_refcell_eq!(n.inp_w_nudge_sum, vec![0.0; 2]);
             assert_refcell_eq!(n.requested_nudge, 0.0);
         }
+
+        #[test]
+        fn calc_nudge_layer1() {
+            let mut nw = Network::new(&vec![3, 2]);
+            nw.set_inputs(&vec![0.8, 0.12, 0.53]);
+            let n = nw.get_main_node(1, 1);
+            n.request_nudge(0.9);
+            n.sum_cache.replace(Some(-0.8));
+            n.calc_nudge(&nw);
+            let base_nudge = 0.9 * (-0.8).sig_deriv() * 1.0;
+            assert_refcell_eq!(n.bias_nudge_sum, base_nudge);
+            assert_refcell_eq!(n.inp_w_nudge_sum, vec![
+                base_nudge * 0.8, base_nudge * 0.12, base_nudge * 0.53]);
+            assert_refcell_eq!(n.nudge_cnt, 1);
+        }
     }
 }
