@@ -84,10 +84,17 @@ impl Node {
             // weight nudges
             (*self.inp_w_nudge_sum.borrow_mut())[i] +=
                 base_nudge * network.get_node(self.layer - 1, i).get_value(network);
+            
             // nudge previous nodes
-            network
-                .get_node(self.layer - 1, i)
-                .request_nudge(base_nudge * self.inp_w[i])
+            // this doesn't appear to work: WHY?
+            // network
+            //     .get_node(self.layer - 1, i)
+            //     .request_nudge(base_nudge * self.inp_w[i]);
+            if self.layer > 1 {
+                *network.get_node(self.layer - 1, i)
+                    .try_into_ref::<Node>().unwrap()
+                    .requested_nudge.borrow_mut() += base_nudge * self.inp_w[i];
+            }
         });
         (*self.nudge_cnt.borrow_mut()) += 1;
     }
@@ -428,6 +435,36 @@ mod tests {
             assert_refcell_eq!(n.bias_nudge_sum, base_nudge);
             assert_refcell_eq!(n.inp_w_nudge_sum, vec![
                 base_nudge * 0.8, base_nudge * 0.12, base_nudge * 0.53]);
+            assert_refcell_eq!(n.nudge_cnt, 1);
+        }
+
+        #[test]
+        fn calc_nudge_layer2() {
+            let mut nw = Network::new(&vec![5, 5, 3]);
+            let layer_1_value = vec![0.2, 0.9, 0.0, 0.3, 1.0];
+            for (i, n) in nw.layers[1].iter().enumerate() {
+                n.try_into_ref::<Node>()
+                    .unwrap()
+                    .result_cache.replace(Some(layer_1_value[i]));
+            }
+            let n = nw.get_main_node_mut(2, 1);
+            let inp_w = vec![3.5, 0.3, -2.1, 0.0, -4.7];
+            n.inp_w.clone_from(&inp_w);
+            let n = nw.get_main_node(2, 1);
+            n.request_nudge(-0.3);
+            n.sum_cache.replace(Some(1.8));
+            n.calc_nudge(&nw);
+            let base_nudge = -0.3 * (1.8).sig_deriv() * 1.0;
+            assert_refcell_eq!(n.bias_nudge_sum, base_nudge);
+            assert_refcell_eq!(n.inp_w_nudge_sum, layer_1_value.iter().map(|nv| {
+                base_nudge * nv
+            }).collect::<Vec<_>>());
+            let actual: Vec<_> = nw.layers[1].iter().map(|n| {
+                *n.try_into_ref::<Node>().unwrap().requested_nudge.borrow()
+            }).collect();
+            assert_eq!(actual, inp_w.iter().map(|w| {
+                base_nudge * w
+            }).collect::<Vec<_>>());
             assert_refcell_eq!(n.nudge_cnt, 1);
         }
     }
