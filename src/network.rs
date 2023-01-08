@@ -114,9 +114,9 @@ impl Network {
 }
 
 impl Network {
-    pub fn request_nudges_end(&self, expected: &Vec<f64>) {
+    pub fn request_nudges(&self, expected: &Vec<f64>) {
         let outputs = self.get_outputs();
-        self.layers[self.layers.len() - 1]
+        self.last_layer()
             .iter()
             .enumerate()
             .for_each(|(i, n)| {
@@ -129,7 +129,7 @@ impl Network {
     }
 
     pub fn train_on_current_data(&self, expected: &Vec<f64>) {
-        self.request_nudges_end(expected);
+        self.request_nudges(expected);
         self.layers.iter().skip(1).rev().for_each(|l| {
             l.iter().for_each(|n| {
                 n.try_into_ref::<Node>().unwrap().calc_nudge(self);
