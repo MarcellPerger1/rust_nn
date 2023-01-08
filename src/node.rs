@@ -86,21 +86,11 @@ impl Node {
                 base_nudge * network.get_node(self.layer - 1, i).get_value(network);
             
             // nudge previous nodes
-            // this doesn't appear to work: WHY?
-            // network
-            //     .get_node(self.layer - 1, i)
-            //     .request_nudge(base_nudge * self.inp_w[i]);
-            if self.layer > 1 {
-                *network.get_node(self.layer - 1, i)
-                    .try_into_ref::<Node>().unwrap()
-                    .requested_nudge.borrow_mut() += base_nudge * self.inp_w[i];
-            }
+            network
+                .get_node(self.layer - 1, i)
+                .request_nudge(base_nudge * self.inp_w[i]);
         });
         (*self.nudge_cnt.borrow_mut()) += 1;
-    }
-
-    pub fn request_nudge(&self, nudge: f64) {
-        *self.requested_nudge.borrow_mut() += nudge;
     }
 
     pub fn apply_nudges(&mut self) {
@@ -155,6 +145,10 @@ impl NodeLike for Node {
     fn invalidate(&self) {
         self.sum_cache.replace(None);
         self.result_cache.replace(None);
+    }
+
+    fn request_nudge(&self, nudge: f64) {
+        *self.requested_nudge.borrow_mut() += nudge;
     }
 }
 

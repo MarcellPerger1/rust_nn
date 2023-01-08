@@ -1,4 +1,4 @@
-use crate::node::{new_node, AnyNode, Node, StartNode};
+use crate::node::{new_node, AnyNode, Node, StartNode, NodeLike};
 use crate::training_data::{TrainingData, TrainingExample};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
 
