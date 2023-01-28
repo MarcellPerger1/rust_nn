@@ -1,11 +1,11 @@
-use crate::node::{new_node, AnyNode, Node, StartNode};
+use crate::node::{new_node, AnyNode, Node, StartNode, NodeLike};
+use crate::training_data::{TrainingData, TrainingExample};
 use crate::util::{error_deriv, error_f, TryIntoRef, TryIntoRefMut};
-use crate::training_data::{TrainingExample, TrainingData};
 
 pub type LayerT = Vec<AnyNode>;
 pub type NetworkLayersT = Vec<LayerT>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NetworkConfig {
     pub learning_rate: f64,
     pub shape: Vec<usize>,
@@ -37,7 +37,10 @@ impl Network {
 
     pub fn with_config(config: &NetworkConfig) -> Network {
         let config = config.clone();
-        assert!(config.shape.len() >= 2);
+        assert!(
+            config.shape.len() >= 2,
+            "network must have at least start and end layers!"
+        );
         let layers = config
             .shape
             .iter()
@@ -58,7 +61,11 @@ impl Network {
     }
 
     pub fn get_current_cost(&self, expected: &Vec<f64>) -> f64 {
-        assert_eq!(self.layers.len(), expected.len());
+        assert_eq!(
+            self.last_layer().len(),
+            expected.len(),
+            "Length of expected must match length of output"
+        );
         self.layers[self.layers.len() - 1]
             .iter()
             .enumerate()
@@ -93,6 +100,11 @@ impl Network {
     }
 
     pub fn set_inputs(&mut self, inputs: &Vec<f64>) {
+        assert_eq!(
+            inputs.len(),
+            self.layers[0].len(),
+            "number of inputs must match number of nodes in layer 0"
+        );
         self.layers[0].iter_mut().enumerate().for_each(|(i, n)| {
             n.try_into_ref_mut::<StartNode>()
                 .unwrap()
@@ -102,9 +114,9 @@ impl Network {
 }
 
 impl Network {
-    pub fn request_nudges_end(&self, expected: &Vec<f64>) {
+    pub fn request_nudges(&self, expected: &Vec<f64>) {
         let outputs = self.get_outputs();
-        self.layers[self.layers.len() - 1]
+        self.last_layer()
             .iter()
             .enumerate()
             .for_each(|(i, n)| {
@@ -117,7 +129,7 @@ impl Network {
     }
 
     pub fn train_on_current_data(&self, expected: &Vec<f64>) {
-        self.request_nudges_end(expected);
+        self.request_nudges(expected);
         self.layers.iter().skip(1).rev().for_each(|l| {
             l.iter().for_each(|n| {
                 n.try_into_ref::<Node>().unwrap().calc_nudge(self);
@@ -150,9 +162,7 @@ impl Network {
     }
 
     pub fn train_on_batch(&mut self, batch: &TrainingData) {
-        batch.0.iter().for_each(|data| {
-            self.train_on_data(data)
-        });
+        batch.0.iter().for_each(|data| self.train_on_data(data));
         self.apply_nudges();
     }
 
@@ -162,7 +172,6 @@ impl Network {
         });
     }
 }
-
 
 // indexing stuff
 impl Network {
@@ -215,5 +224,260 @@ impl Network {
     #[inline]
     pub fn last_layer(&self) -> &LayerT {
         self.layers.last().expect("Network must have layers!!!")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::*;
+
+    /// Create a network with shape `[5, 3, 2]`
+    fn new_nw() -> Network {
+        Network::new(&vec![5, 3, 2])
+    }
+
+    mod test_new {
+        use super::*;
+
+        #[test]
+        fn init_by_shape() {
+            let shape = vec![5, 3, 2];
+            let nw = Network::new(&shape);
+            assert_eq!(nw.layers.len(), shape.len());
+            nw.layers.iter().enumerate().for_each(|(i, l)| {
+                assert_eq!(l.len(), shape[i]);
+            })
+        }
+        #[test]
+        #[should_panic(expected = "network must have at least start and end layers")]
+        fn few_layers_fast_fail() {
+            Network::new(&vec![7]);
+        }
+        #[test]
+        fn nodes_know_self_layer() {
+            let shape = vec![5, 3, 2];
+            let nw = Network::new(&shape);
+            nw.layers.iter().enumerate().skip(1).for_each(|(i, l)| {
+                l.iter().for_each(|n| {
+                    assert_eq!(n.try_into_ref::<Node>().unwrap().layer, i);
+                })
+            })
+        }
+        #[test]
+        fn nodes_have_correct_inp_w_length() {
+            let shape = vec![5, 3, 2];
+            let nw = Network::new(&shape);
+            nw.layers.iter().enumerate().skip(1).for_each(|(i, l)| {
+                l.iter().for_each(|n| {
+                    assert_eq!(n.try_into_ref::<Node>().unwrap().inp_w.len(), shape[i - 1]);
+                })
+            })
+        }
+        #[test]
+        fn start_layer_has_start_nodes() {
+            let shape = vec![5, 3, 2];
+            let nw = Network::new(&shape);
+            nw.layers[0].iter().for_each(|n| {
+                n.try_into_ref::<StartNode>()
+                    .expect("Start layer must only conatin start nodes");
+            })
+        }
+        #[test]
+        fn main_layers_have_main_nodes() {
+            let shape = vec![5, 3, 2];
+            let nw = Network::new(&shape);
+            nw.layers.iter().skip(1).for_each(|l| {
+                l.iter().for_each(|n| {
+                    n.try_into_ref::<Node>()
+                        .expect("Main layer must only conatin main nodes");
+                })
+            })
+        }
+        #[test]
+        fn config_built_correctly() {
+            let shape = vec![5, 3, 2];
+            let nw = Network::new(&shape);
+            assert_eq!(
+                nw.config,
+                NetworkConfig {
+                    shape: vec![5, 3, 2],
+                    ..Default::default()
+                }
+            );
+        }
+        #[test]
+        fn config_arg_respected() {
+            let config = NetworkConfig {
+                learning_rate: 3.5,
+                shape: vec![10, 6, 3],
+            };
+            let nw = Network::with_config(&config);
+            assert_eq!(nw.config, config);
+        }
+    }
+
+    mod current_cost {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "Length of expected must match length of output")]
+        fn bad_length_fails() {
+            new_nw().get_current_cost(&vec![0.1; 5]);
+        }
+        #[test]
+        fn result_zero() {
+            let mut nw = new_nw();
+            nw.set_inputs(&vec![0.0; 5]);
+            assert_eq!(nw.get_current_cost(&vec![0.5; 2]), 0.0);
+        }
+        #[test]
+        fn result_normal() {
+            let mut nw = Network::new(&vec![7, 5, 5, 2]);
+            nw.set_inputs(&vec![0.0; 7]);
+            assert_f_eq!(nw.get_current_cost(&vec![0.9, 0.31]), 0.1961);
+        }
+    }
+
+    #[test]
+    fn invaildate() {
+        let nw = new_nw();
+        // set caches
+        nw.get_outputs();
+        nw.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                let n: &Node = n.try_into_ref().unwrap();
+                assert!(n.sum_cache.borrow().is_some());
+                assert!(n.result_cache.borrow().is_some());
+            })
+        });
+        nw.invalidate();
+        nw.layers.iter().skip(1).for_each(|l| {
+            l.iter().for_each(|n| {
+                let n: &Node = n.try_into_ref().unwrap();
+                assert!(n.sum_cache.borrow().is_none());
+                assert!(n.result_cache.borrow().is_none());
+            })
+        });
+    }
+
+    mod set_input {
+        use super::*;
+
+        #[test]
+        fn normal() {
+            let mut nw = new_nw();
+            nw.set_input(3, 0.7);
+            assert_eq!(nw.layers[0][3].get_value(&nw), 0.7);
+        }
+
+        #[test]
+        #[should_panic(expected = "6")]
+        fn oob() {
+            let mut nw = new_nw();
+            nw.set_input(6, 0.7);
+        }
+    }
+
+    mod set_inputs {
+        use super::*;
+
+        #[test]
+        fn normal() {
+            let mut nw = new_nw();
+            let inps = vec![0.2; 5];
+            nw.set_inputs(&inps);
+            nw.layers[0].iter().enumerate().for_each(|(i, n)| {
+                assert_eq!(n.get_value(&nw), inps[i]);
+            })
+        }
+
+        #[test]
+        #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
+        fn too_long() {
+            let mut nw = new_nw();
+            let inps = vec![0.8; 6];
+            nw.set_inputs(&inps);
+        }
+
+        #[test]
+        #[should_panic(expected = "number of inputs must match number of nodes in layer 0")]
+        fn too_short() {
+            let mut nw = new_nw();
+            let inps = vec![0.9; 4];
+            nw.set_inputs(&inps);
+        }
+    }
+
+    #[test]
+    fn get_output_from_cache_forced() {
+        let nw = new_nw();
+        (0..*nw.config.shape.last().unwrap()).for_each(|i| {
+            nw.last_layer()[i]
+                .try_into_ref::<Node>()
+                .unwrap()
+                .result_cache
+                .replace(Some(-4.5));
+            assert_eq!(nw.get_output(i), -4.5);
+        });
+    }
+
+    #[test]
+    fn get_outputs_from_cache_forced() {
+        let nw = new_nw();
+        let out_cnt = *nw.config.shape.last().unwrap();
+        (0..out_cnt).for_each(|i| {
+            nw.last_layer()[i]
+                .try_into_ref::<Node>()
+                .unwrap()
+                .result_cache
+                .replace(Some(0.2));
+        });
+        assert_eq!(nw.get_outputs(), vec![0.2; out_cnt]);
+    }
+
+    #[test]
+    fn get_outputs_full() {
+        use crate::sigmoid::Sigmoid;
+
+        let mut nw = Network::new(&vec![3, 2]);
+        let inputs = vec![0.9, 0.2, 0.45];
+        nw.set_inputs(&inputs);
+        let weights = vec![vec![-2.3, 0.7, 0.0], vec![0.3, -1.92, -0.14]];
+        let biases = vec![1.1, -0.3];
+        for (ni, v) in weights.iter().enumerate() {
+            nw.get_main_node_mut(1, ni).inp_w.clone_from(v);
+            nw.get_main_node_mut(1, ni).bias = biases[ni];
+        }
+        let actual = nw.get_outputs();
+        let outputs: Vec<_> = (0..2)
+            .map(|mni| {
+                ((0..3)
+                    .map(|sni| inputs[sni] * weights[mni][sni])
+                    .sum::<f64>()
+                    + biases[mni])
+                    .sigmoid()
+            })
+            .collect();
+        println!("{:#?}", nw);
+        assert_eq!(actual, outputs);
+    }
+
+    #[test]
+    fn request_nudges() {
+        let nw = Network::new(&vec![5, 3, 4]);
+        let outputs = vec![0.8, 0.1, 0.0, 1.0];
+        let expected = vec![0.7, 0.8, 0.0, 0.77];
+        for i in 0..4 {
+            nw.get_main_node(2, i).result_cache.replace(Some(outputs[i]));
+        }
+        let expect_nudges: Vec<_> = (0..4).map(|i| {
+            -error_deriv(outputs[i], expected[i])
+        }).collect();
+        nw.request_nudges(&expected);
+        for i in 0..4 {
+            let node = nw.get_main_node(2, i);
+            assert_eq!(*node.requested_nudge.borrow(), expect_nudges[i]);
+        }
     }
 }

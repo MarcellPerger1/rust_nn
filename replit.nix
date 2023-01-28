@@ -1,5 +1,6 @@
 { pkgs }: {
 	deps = [
+		pkgs.htop
 		pkgs.rustc
 		pkgs.rustfmt
 		pkgs.cargo
