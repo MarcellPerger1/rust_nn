@@ -462,4 +462,22 @@ mod tests {
         println!("{:#?}", nw);
         assert_eq!(actual, outputs);
     }
+
+    #[test]
+    fn request_nudges() {
+        let nw = Network::new(&vec![5, 3, 4]);
+        let outputs = vec![0.8, 0.1, 0.0, 1.0];
+        let expected = vec![0.7, 0.8, 0.0, 0.77];
+        for i in 0..4 {
+            nw.get_main_node(2, i).result_cache.replace(Some(outputs[i]));
+        }
+        let expect_nudges: Vec<_> = (0..4).map(|i| {
+            -error_deriv(outputs[i], expected[i])
+        }).collect();
+        nw.request_nudges(&expected);
+        for i in 0..4 {
+            let node = nw.get_main_node(2, i);
+            assert_eq!(*node.requested_nudge.borrow(), expect_nudges[i]);
+        }
+    }
 }
